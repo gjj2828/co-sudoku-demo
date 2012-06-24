@@ -3,6 +3,8 @@ Microsoft Visual Studio Solution File, Format Version 10.00
 # Visual Studio 2008
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "DownloadDatabase", "DownloadDatabase\DownloadDatabase.vcproj", "{E58FF16F-9FD4-4A67-A2F8-DF5C0B3898F4}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Launcher", "Launcher\Launcher.vcproj", "{F07EC1DB-AC5A-4FE7-BD9B-02721FF9512F}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -13,6 +15,10 @@ Global
 		{E58FF16F-9FD4-4A67-A2F8-DF5C0B3898F4}.Debug|Win32.Build.0 = Debug|Win32
 		{E58FF16F-9FD4-4A67-A2F8-DF5C0B3898F4}.Release|Win32.ActiveCfg = Release|Win32
 		{E58FF16F-9FD4-4A67-A2F8-DF5C0B3898F4}.Release|Win32.Build.0 = Release|Win32
+		{F07EC1DB-AC5A-4FE7-BD9B-02721FF9512F}.Debug|Win32.ActiveCfg = Debug|Win32
+		{F07EC1DB-AC5A-4FE7-BD9B-02721FF9512F}.Debug|Win32.Build.0 = Debug|Win32
+		{F07EC1DB-AC5A-4FE7-BD9B-02721FF9512F}.Release|Win32.ActiveCfg = Release|Win32
+		{F07EC1DB-AC5A-4FE7-BD9B-02721FF9512F}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

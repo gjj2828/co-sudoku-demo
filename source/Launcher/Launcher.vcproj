@@ -2,9 +2,9 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="9.00"
-	Name="DownloadDatabase"
-	ProjectGUID="{E58FF16F-9FD4-4A67-A2F8-DF5C0B3898F4}"
-	RootNamespace="DownloadDatabase"
+	Name="Launcher"
+	ProjectGUID="{F07EC1DB-AC5A-4FE7-BD9B-02721FF9512F}"
+	RootNamespace="Launcher"
 	TargetFrameworkVersion="196613"
 	>
 	<Platforms>
@@ -44,6 +44,7 @@
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
+				UsePrecompiledHeader="2"
 				WarningLevel="3"
 				DebugInformationFormat="4"
 			/>
@@ -113,6 +114,7 @@
 				AdditionalIncludeDirectories="..\CommonFile"
 				RuntimeLibrary="2"
 				EnableFunctionLevelLinking="true"
+				UsePrecompiledHeader="2"
 				WarningLevel="3"
 				DebugInformationFormat="3"
 			/>
@@ -166,6 +168,22 @@
 			<File
 				RelativePath=".\main.cpp"
 				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="0"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="0"
+					/>
+				</FileConfiguration>
 			</File>
 		</Filter>
 		<Filter
@@ -173,6 +191,10 @@
 			Filter="h;hpp;hxx;hm;inl;inc;xsd"
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
+			<File
+				RelativePath=".\StdAfx.h"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="资源文件"
