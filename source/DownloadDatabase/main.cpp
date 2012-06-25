@@ -1,4 +1,4 @@
-#include <CommonHeader.h>
+#include "StdAfx.h"
 
 #define ERROR_MSG(context)  MessageBox(NULL, (context), "Error", MB_OK)
 #define ID_MIN  (1)

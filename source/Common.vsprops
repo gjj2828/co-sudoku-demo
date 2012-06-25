@@ -1,7 +1,14 @@
-<?xml version="1.0"?>
-<VisualStudioPropertySheet 
-	ProjectType="Visual C++" 
-	Version="8.00" 
+<?xml version="1.0" encoding="gb2312"?>
+<VisualStudioPropertySheet
+	ProjectType="Visual C++"
+	Version="8.00"
 	Name="Common"
+	OutputDirectory="$(SolutionDir)..\Bin\$(ConfigurationName)"
+	IntermediateDirectory="$(SolutionDir)..\BinTemp\$(ConfigurationName)\$(ProjectName)"
 	>
+	<Tool
+		Name="VCCLCompilerTool"
+		AdditionalIncludeDirectories="..\CommonFile"
+		UsePrecompiledHeader="2"
+	/>
 </VisualStudioPropertySheet>
