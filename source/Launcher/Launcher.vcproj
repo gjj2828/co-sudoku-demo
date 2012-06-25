@@ -17,9 +17,8 @@
 	<Configurations>
 		<Configuration
 			Name="Debug|Win32"
-			OutputDirectory="$(SolutionDir)..\Bin\$(ConfigurationName)"
-			IntermediateDirectory="$(SolutionDir)..\BinTemp\$(ConfigurationName)\$(ProjectName)"
 			ConfigurationType="1"
+			InheritedPropertySheets="..\Common.vsprops"
 			CharacterSet="2"
 			>
 			<Tool
@@ -40,7 +39,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..\CommonFile"
+				AdditionalIncludeDirectories=""
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
@@ -89,6 +88,7 @@
 			OutputDirectory="$(SolutionDir)..\Bin\$(ConfigurationName)"
 			IntermediateDirectory="$(SolutionDir)..\BinTemp\$(ConfigurationName)\$(ProjectName)"
 			ConfigurationType="1"
+			InheritedPropertySheets="..\Common.vsprops"
 			CharacterSet="2"
 			WholeProgramOptimization="1"
 			>
