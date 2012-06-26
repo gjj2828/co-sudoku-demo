@@ -5,8 +5,19 @@
 #include <stdio.h>
 #include <sys/stat.h>
 #include <shlwapi.h>
+#include <new>
 
 #pragma comment(lib, "shlwapi.lib")
+
+#define DLL_EXPORT  __declspec(dllexport)
+#define DLL_IMPORT  __declspec(dllimport)
+
+#define ERROR_MSG(context)  MessageBox(NULL, (context), "Error", MB_OK)
+#define ERROR_EXIT(context) \
+{                           \
+    ERROR_MSG(context);     \
+    exit(1);                \
+}
 
 inline void InitRootDir()
 {

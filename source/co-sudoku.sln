@@ -7,6 +7,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Launcher", "Launcher\Launch
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Game", "Game\Game.vcproj", "{2EBEF844-E195-45A3-95B1-D2B1182009FE}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CommonFile", "CommonFile\CommonFile.vcproj", "{748ED48A-CA2A-4D47-B345-3A8A7B69417E}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -25,6 +27,10 @@ Global
 		{2EBEF844-E195-45A3-95B1-D2B1182009FE}.Debug|Win32.Build.0 = Debug|Win32
 		{2EBEF844-E195-45A3-95B1-D2B1182009FE}.Release|Win32.ActiveCfg = Release|Win32
 		{2EBEF844-E195-45A3-95B1-D2B1182009FE}.Release|Win32.Build.0 = Release|Win32
+		{748ED48A-CA2A-4D47-B345-3A8A7B69417E}.Debug|Win32.ActiveCfg = Debug|Win32
+		{748ED48A-CA2A-4D47-B345-3A8A7B69417E}.Debug|Win32.Build.0 = Debug|Win32
+		{748ED48A-CA2A-4D47-B345-3A8A7B69417E}.Release|Win32.ActiveCfg = Release|Win32
+		{748ED48A-CA2A-4D47-B345-3A8A7B69417E}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
