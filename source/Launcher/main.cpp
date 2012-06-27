@@ -17,16 +17,11 @@ int APIENTRY    WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCm
     if(!pGame)
     {
         FreeLibrary(hGameDll);
-        ERROR_EXIT("Can\'t get CreateGame function!");
+        ERROR_EXIT("Create game failed!");
     }
-    pGame->Init();
     if(pGame->Init())
     {
         pGame->Run();
-    }
-    else
-    {
-        ERROR_MSG("Can\'t get CreateGame function!");
     }
     pGame->Release();
     FreeLibrary(hGameDll);

@@ -3,7 +3,7 @@
 
 extern "C"
 {
-    GAME_API IGame* CreateGame()
+    DLL_EXPORT IGame* CreateGame()
     {
         static char buffer[sizeof(CGame)];
         return new ((void*)buffer) CGame();

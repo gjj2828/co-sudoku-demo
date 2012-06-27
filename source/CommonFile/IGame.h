@@ -4,7 +4,7 @@
 class IGame
 {
 public:
-    virtual bool    Init()      = 0;
+    virtual int     Init()      = 0;
     virtual void    Run()       = 0;
     virtual void    Release()   = 0;
 };

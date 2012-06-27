@@ -9,6 +9,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Game", "Game\Game.vcproj", 
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CommonFile", "CommonFile\CommonFile.vcproj", "{748ED48A-CA2A-4D47-B345-3A8A7B69417E}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Puzzle", "Puzzle\Puzzle.vcproj", "{D745E520-79DC-4C1D-A246-F7CC0602C228}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -31,6 +33,10 @@ Global
 		{748ED48A-CA2A-4D47-B345-3A8A7B69417E}.Debug|Win32.Build.0 = Debug|Win32
 		{748ED48A-CA2A-4D47-B345-3A8A7B69417E}.Release|Win32.ActiveCfg = Release|Win32
 		{748ED48A-CA2A-4D47-B345-3A8A7B69417E}.Release|Win32.Build.0 = Release|Win32
+		{D745E520-79DC-4C1D-A246-F7CC0602C228}.Debug|Win32.ActiveCfg = Debug|Win32
+		{D745E520-79DC-4C1D-A246-F7CC0602C228}.Debug|Win32.Build.0 = Debug|Win32
+		{D745E520-79DC-4C1D-A246-F7CC0602C228}.Release|Win32.ActiveCfg = Release|Win32
+		{D745E520-79DC-4C1D-A246-F7CC0602C228}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

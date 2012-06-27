@@ -18,7 +18,11 @@
     ERROR_MSG(context);     \
     exit(1);                \
 }
-
+#define ERROR_RTN0(context) \
+{                           \
+    ERROR_MSG(context);     \
+    return 0;                \
+}
 inline void InitRootDir()
 {
     WCHAR   sFileName[_MAX_PATH];
