@@ -17,7 +17,7 @@ int APIENTRY    WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCm
     if(!pGame)
     {
         FreeLibrary(hGameDll);
-        ERROR_EXIT("Create game failed!");
+        ERROR_EXIT("CreateGame failed!");
     }
     if(pGame->Init())
     {

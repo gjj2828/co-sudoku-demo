@@ -84,7 +84,7 @@
 		</Configuration>
 		<Configuration
 			Name="Release|Win32"
-			ConfigurationType="1"
+			ConfigurationType="2"
 			InheritedPropertySheets="..\Common.vsprops;..\Dll.vsprops"
 			CharacterSet="2"
 			WholeProgramOptimization="1"

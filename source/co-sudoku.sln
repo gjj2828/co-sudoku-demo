@@ -11,6 +11,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CommonFile", "CommonFile\Co
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Puzzle", "Puzzle\Puzzle.vcproj", "{D745E520-79DC-4C1D-A246-F7CC0602C228}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Render", "Render\Render.vcproj", "{64B9F57C-DB59-4529-A1C8-D04E8A19D2E0}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -37,6 +39,10 @@ Global
 		{D745E520-79DC-4C1D-A246-F7CC0602C228}.Debug|Win32.Build.0 = Debug|Win32
 		{D745E520-79DC-4C1D-A246-F7CC0602C228}.Release|Win32.ActiveCfg = Release|Win32
 		{D745E520-79DC-4C1D-A246-F7CC0602C228}.Release|Win32.Build.0 = Release|Win32
+		{64B9F57C-DB59-4529-A1C8-D04E8A19D2E0}.Debug|Win32.ActiveCfg = Debug|Win32
+		{64B9F57C-DB59-4529-A1C8-D04E8A19D2E0}.Debug|Win32.Build.0 = Debug|Win32
+		{64B9F57C-DB59-4529-A1C8-D04E8A19D2E0}.Release|Win32.ActiveCfg = Release|Win32
+		{64B9F57C-DB59-4529-A1C8-D04E8A19D2E0}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

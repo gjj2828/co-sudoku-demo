@@ -2,9 +2,9 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="9.00"
-	Name="Puzzle"
-	ProjectGUID="{D745E520-79DC-4C1D-A246-F7CC0602C228}"
-	RootNamespace="Puzzle"
+	Name="Render"
+	ProjectGUID="{64B9F57C-DB59-4529-A1C8-D04E8A19D2E0}"
+	RootNamespace="Render"
 	TargetFrameworkVersion="196613"
 	>
 	<Platforms>
@@ -182,7 +182,7 @@
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
 			<File
-				RelativePath=".\PuzzleSystem.h"
+				RelativePath=".\RenderSystem.h"
 				>
 			</File>
 			<File

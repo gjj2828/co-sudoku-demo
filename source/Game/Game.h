@@ -3,6 +3,7 @@
 
 #include <IGame.h>
 #include <IPuzzleSystem.h>
+#include <IRenderSystem.h>
 
 class CGame: public IGame
 {
@@ -17,11 +18,13 @@ private:
     {
         EMODULE_MIN,
         EMODULE_PUZZLE  = EMODULE_MIN,
+        EMODULE_RENDER,
         EMODULE_MAX,
     };
 
     HMODULE         m_hModules[EMODULE_MAX];
     IPuzzleSystem*  m_pPuzzleSystem;
+    IRenderSystem*  m_pRenderSystem;
 };
 
 #endif // __GAME_H__

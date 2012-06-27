@@ -132,6 +132,10 @@
 				RelativePath=".\IPuzzleSystem.h"
 				>
 			</File>
+			<File
+				RelativePath=".\IRenderSystem.h"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="资源文件"
