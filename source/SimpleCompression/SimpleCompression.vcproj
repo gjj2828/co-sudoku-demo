@@ -2,9 +2,9 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="9.00"
-	Name="Compression"
-	ProjectGUID="{C6E4A016-2447-4D45-8113-5A5FF9AF7BBF}"
-	RootNamespace="Compression"
+	Name="SimpleCompression"
+	ProjectGUID="{51D9F2C6-BE93-4689-9794-05AF85A6BFD8}"
+	RootNamespace="SimpleCompression"
 	TargetFrameworkVersion="196613"
 	>
 	<Platforms>
@@ -182,7 +182,7 @@
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
 			<File
-				RelativePath=".\CompressionSystem.h"
+				RelativePath=".\SimpleCompression.h"
 				>
 			</File>
 			<File

@@ -129,7 +129,7 @@
 				>
 			</File>
 			<File
-				RelativePath=".\ICompressionSystem.h"
+				RelativePath=".\ICompression.h"
 				>
 			</File>
 			<File
