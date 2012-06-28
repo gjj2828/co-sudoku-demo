@@ -32,4 +32,6 @@ inline void InitRootDir()
     SetCurrentDirectoryW(sFileName);
 }
 
+#include <ComPuzExpr.h>
+
 #endif // __COMMONHEADER_H__
