@@ -6,6 +6,7 @@
 #include <sys/stat.h>
 #include <shlwapi.h>
 #include <new>
+#include <bitset>
 
 #pragma comment(lib, "shlwapi.lib")
 
@@ -13,16 +14,33 @@
 #define DLL_IMPORT  __declspec(dllimport)
 
 #define ERROR_MSG(context)  MessageBox(NULL, (context), "Error", MB_OK)
+
 #define ERROR_EXIT(context) \
 {                           \
     ERROR_MSG(context);     \
     exit(1);                \
 }
+
 #define ERROR_RTN0(context) \
 {                           \
     ERROR_MSG(context);     \
     return 0;                \
 }
+
+#define BITTOCHARBUFFER(bit, buffer, bitlen, buflen)            \
+{                                                               \
+    int index = 0;                                              \
+    for(int i = 0; i < (buflen) && index < (bitlen); i++)       \
+    {                                                           \
+        for(int j = 0; j < CHAR_BIT && index < (bitlen); j++)   \
+        {                                                       \
+            UCHAR a      = (bit)[index];                        \
+            (buffer)[i] |= (a << j);                            \
+            index++;                                            \
+        }                                                       \
+    }                                                           \
+}
+
 inline void InitRootDir()
 {
     WCHAR   sFileName[_MAX_PATH];
