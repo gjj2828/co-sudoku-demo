@@ -3,6 +3,7 @@
 
 #include <windows.h>
 #include <stdio.h>
+#include <io.h>
 #include <sys/stat.h>
 #include <shlwapi.h>
 #include <new>
@@ -12,6 +13,12 @@
 
 #define DLL_EXPORT  __declspec(dllexport)
 #define DLL_IMPORT  __declspec(dllimport)
+
+#define SAFE_FCLOSE(p)  \
+{                       \
+    if(p) fclose(p);    \
+    (p) = NULL;         \
+}
 
 #define ERROR_MSG(context)  MessageBox(NULL, (context), "Error", MB_OK)
 
@@ -58,7 +65,7 @@ inline void InitRootDir()
 {
     WCHAR   sFileName[_MAX_PATH];
     GetModuleFileNameW(GetModuleHandle(NULL), sFileName, sizeof(sFileName));
-    WCHAR*  p   = StrStrIW(sFileName, L"\\Bin");
+    WCHAR*  p   = StrRStrIW(sFileName, NULL, L"\\Bin\\");
     if(p)   *p  = 0;
     SetCurrentDirectoryW(sFileName);
 }
