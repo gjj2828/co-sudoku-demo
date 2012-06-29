@@ -41,6 +41,19 @@
     }                                                           \
 }
 
+#define CHARBUFFERTOBIT(buffer, bit, buflen, bitlen)            \
+{                                                               \
+    int index = 0;                                              \
+    for(int i = 0; i < (buflen) && index < (bitlen); i++)       \
+    {                                                           \
+        for(int j = 0; j < CHAR_BIT && index < (bitlen); j++)   \
+        {                                                       \
+            (bit)[index] = (buffer)[i] & (1 << j);              \
+            index++;                                            \
+        }                                                       \
+    }                                                           \
+}
+
 inline void InitRootDir()
 {
     WCHAR   sFileName[_MAX_PATH];

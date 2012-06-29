@@ -7,7 +7,7 @@ class CSimpleCompression: public ICompression
 {
 public:
     virtual EEncodeRet  Encode(const ComPuzExpr& puzzle, UCHAR* buffer, int& length);
-    virtual EDecodeRet  Decode(ComPuzExpr& puzzle, UCHAR* buffer, int length)           {return EDECODERET_SUCCESS;}
+    virtual EDecodeRet  Decode(ComPuzExpr& puzzle, UCHAR* buffer, int length);
 private:
     enum
     {
