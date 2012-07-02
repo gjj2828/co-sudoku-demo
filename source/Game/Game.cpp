@@ -37,13 +37,11 @@ int CGame::Init()
 
 void    CGame::Release()
 {
-    m_pPuzzleSystem->Release();
-    m_pRenderSystem->Release();
+    SAFE_RELEASE(m_pPuzzleSystem);
+    SAFE_RELEASE(m_pRenderSystem);
     for(int i = EMODULE_MIN; i < EMODULE_MAX; i++)
     {
-        if(m_hModules[i] == NULL)   continue;
-        FreeLibrary(m_hModules[i]);
-        m_hModules[i]   = NULL;
+        SAFE_FREELIBRARY(m_hModules[i]);
     }
     this->~CGame();
 }
