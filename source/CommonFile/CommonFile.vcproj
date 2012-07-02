@@ -125,6 +125,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\CompressionHeader.h"
+				>
+			</File>
+			<File
 				RelativePath=".\ComPuzExpr.h"
 				>
 			</File>

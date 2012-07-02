@@ -7,4 +7,12 @@ struct ComPuzExpr
     char    data[SIZE];
 };
 
+#define FILLPUZZLE(expr, buffer)                \
+{                                               \
+    for(int i = 0; i < ComPuzExpr::SIZE; i++)   \
+    {                                           \
+        (expr).data[i] = (buffer)[i] - '0';                \
+    }                                           \
+}
+
 #endif // __COMPUZEXPR_H__

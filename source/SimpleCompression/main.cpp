@@ -3,9 +3,9 @@
 
 extern "C"
 {
-    DLL_EXPORT ICompression* CreateCompression()
+    DLL_EXPORT ICompression* GetCompression()
     {
-        static char buffer[sizeof(CSimpleCompression)];
-        return new ((void*)buffer) CSimpleCompression();
+        static CSimpleCompression compression;
+        return &compression;
     }
 };

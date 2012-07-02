@@ -14,10 +14,41 @@
 #define DLL_EXPORT  __declspec(dllexport)
 #define DLL_IMPORT  __declspec(dllimport)
 
+enum
+{
+    ECOMPRESSION_MIN,
+    ECOMPRESSION_SIMPLE = ECOMPRESSION_MIN,
+    ECOMPRESSION_MAX,
+};
+
 #define SAFE_FCLOSE(p)  \
 {                       \
     if(p) fclose(p);    \
     (p) = NULL;         \
+}
+
+#define SAFE_FINDCLOSE(p)       \
+{                               \
+    if(p != -1) _findclose(p);  \
+    (p) = NULL;                 \
+}
+
+#define SAFE_RELEASE(p)     \
+{                           \
+    if(p) (p)->Release();   \
+    (p) = NULL;             \
+}
+
+#define SAFE_DELETE(p)  \
+{                       \
+    if(p) delete (p);   \
+    (p) = NULL;         \
+}
+
+#define SAFE_FREELIBRARY(p) \
+{                           \
+    if(p) FreeLibrary(p);   \
+    (p) = NULL;             \
 }
 
 #define ERROR_MSG(context)  MessageBox(NULL, (context), "Error", MB_OK)
