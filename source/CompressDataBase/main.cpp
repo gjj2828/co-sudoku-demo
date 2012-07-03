@@ -54,16 +54,20 @@ void Release()
     SAFE_FINDCLOSE(g_FindHandle);
 }
 
-int Compress(const char* in_name, const char* out_name)
+int Compress(const char* in_name, const char* out_name, const char* def_name)
 {
     FILE* in = NULL;
     FILE* out = NULL;
+    FILE* def = NULL;
     in = fopen(in_name, "r");
     out = fopen(out_name, "wb");
-    if(!in || !out)
+    def = fopen(def_name, "wb");
+    if(!in || !out|| !def)
     {
         SAFE_FCLOSE(in);
         SAFE_FCLOSE(out);
+        SAFE_FCLOSE(def);
+        return 0;
     }
 
     enum {BUFLEN = 256, ENLEN=34};
@@ -78,9 +82,13 @@ int Compress(const char* in_name, const char* out_name)
         g_pCompressions[ECOMPRESSION_SIMPLE]->Encode(puzzle, enbuffer, enlen);
         header.type = ECOMPRESSION_SIMPLE;
         header.length = enlen;
-        fwrite(&header, sizeof(CompressionHeader), 1, out);
         fwrite(enbuffer, sizeof(UCHAR), ENLEN, out);
+        fwrite(&header, sizeof(CompressionHeader), 1, def);
     }
+
+    SAFE_FCLOSE(in);
+    SAFE_FCLOSE(out);
+    SAFE_FCLOSE(def);
 
     return 1;
 }
@@ -93,6 +101,7 @@ void main()
 
     char InName[256];
     char OutName[256];
+    char DefName[256];
     do 
     {
         char* p= strrchr(g_FindData.name, '.');
@@ -100,7 +109,8 @@ void main()
         *p = 0;
         sprintf(InName, "DataBase\\Original\\%s.txt", g_FindData.name);
         sprintf(OutName, "DataBase\\%s.db", g_FindData.name);
-        if(!Compress(InName, OutName)) goto END;
+        sprintf(DefName, "DataBase\\%s.def", g_FindData.name);
+        if(!Compress(InName, OutName, DefName)) goto END;
     }while(_findnext(g_FindHandle, &g_FindData) == 0);
 END:
     Release();
