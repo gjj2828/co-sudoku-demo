@@ -21,6 +21,17 @@ enum
     ECOMPRESSION_MAX,
 };
 
+enum
+{
+    EPUZZLEGRADE_MIN,
+    EPUZZLEGRADE_EASY = EPUZZLEGRADE_MIN,
+    EPUZZLEGRADE_GENTLE,
+    EPUZZLEGRADE_MODERATE,
+    EPUZZLEGRADE_TOUGH,
+    EPUZZLEGRADE_DIABOLICAL,
+    EPUZZLEGRADE_MAX,
+};
+
 #define SAFE_FCLOSE(p)  \
 {                       \
     if(p) fclose(p);    \
