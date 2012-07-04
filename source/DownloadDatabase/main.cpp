@@ -56,7 +56,7 @@ void    main()
     sprintf(OutName, "%d-%d.txt", iBegin, iEnd);
     DeleteFile(OutName);
     int iNum    = iEnd - iBegin + 1;
-    printf("Download Percent:%%0\r");
+    printf("Download Percent:0%%\r");
     for(int i = 0; i < iNum; i++)
     {
         int     iPuzzle     = iBegin + i;
@@ -116,7 +116,7 @@ void    main()
         fputs(p1, pfw);
         fputs("\n", pfw);
         fclose(pfw);
-        printf("Download Percent:%%%d\r", (i + 1) * 100 / iNum);
+        printf("Download Percent:%d%%\r", (i + 1) * 100 / iNum);
         Sleep(1000);
     }
 }
