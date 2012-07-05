@@ -2,12 +2,15 @@
 #define __COMMONHEADER_H__
 
 #include <windows.h>
+#include <WinDef.h>
 #include <stdio.h>
 #include <io.h>
 #include <sys/stat.h>
 #include <shlwapi.h>
 #include <new>
 #include <bitset>
+#include <queue>
+#include <map>
 
 #pragma comment(lib, "shlwapi.lib")
 
