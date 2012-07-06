@@ -59,9 +59,21 @@ enum
     (p) = NULL;         \
 }
 
+#define SAFE_DELETEA(p)  \
+{                       \
+    if(p) delete[] (p);   \
+    (p) = NULL;         \
+}
+
 #define SAFE_FREELIBRARY(p) \
 {                           \
     if(p) FreeLibrary(p);   \
+    (p) = NULL;             \
+}
+
+#define SAFE_CLOSEHANDLE(p) \
+{                           \
+    if(p) CloseHandle(p);   \
     (p) = NULL;             \
 }
 

@@ -1,8 +1,10 @@
 #include "StdAfx.h"
+#include "DownloadDatabase.h"
 
 #define ID_MIN  (1)
 #define ID_MAX  (50000)
 
+/*
 void    main()
 {
     InitRootDir();
@@ -119,4 +121,51 @@ void    main()
         printf("Download Percent:%d%%\r", (i + 1) * 100 / iNum);
         Sleep(1000);
     }
+}
+*/
+
+void    main()
+{
+    InitRootDir();
+
+    bool    bProxy;
+    char    proxy[64];
+    printf("Do you need proxy?[y/n]:");
+    char    buf[16];
+    if(!scanf("%s", buf)) ERROR_EXIT("Wrong Input!");
+
+    if(strcmp(buf, "y") == 0)
+    {
+        bProxy  = true;
+    }
+    else if(strcmp(buf, "n") == 0)
+    {
+        bProxy  = false;
+    }
+    else
+    {
+        ERROR_EXIT("Wrong Input!");
+    }
+    if(bProxy)
+    {
+        printf("Please input proxy:");
+        if(!scanf("%s", proxy)) ERROR_EXIT("Wrong Input!");
+    }
+    printf("Please input the download range[1-50000]:\n");
+    int iBegin, iEnd;
+    printf("begin=");
+    if(!scanf("%d", &iBegin) || iBegin < ID_MIN || iBegin > ID_MAX) ERROR_EXIT("Wrong Input!");
+    printf("end=");
+    if(!scanf("%d", &iEnd) || iEnd < iBegin || iEnd > ID_MAX) ERROR_EXIT("Wrong Input!");
+
+    printf("Please input the connection num:\n");
+    int iConNum;
+    printf("connection num=");
+    if(!scanf("%d", &iConNum) || iConNum < 1) ERROR_EXIT("Wrong Input!");
+
+    char* pProxy = NULL;
+    if(bProxy) pProxy = proxy;
+    IDownloadDatabase* p = new CDownloadDatabase(proxy, iBegin, iEnd, iConNum);
+    if(!p->Init()) return;
+    p->Run();
 }

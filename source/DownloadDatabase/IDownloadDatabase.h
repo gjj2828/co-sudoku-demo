@@ -4,6 +4,7 @@
 class IDownloadDatabase
 {
 public:
+    virtual int Init() = 0;
     virtual int Run() = 0;
 };
 

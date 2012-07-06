@@ -8,6 +8,7 @@ class CDownloadDatabase: public IDownloadDatabase
 public:
     CDownloadDatabase(const char* proxy, int begin, int end, int con_num);
 
+    virtual int Init();
     virtual int Run();
 
 private:
@@ -19,10 +20,10 @@ private:
     enum EBufState
     {
         EBUFSTATE_MIN,
-        EBUFSTATE_UNDOWNLOAD = EBUFSTATE_MIN,
-        EBUFSTATE_DOWNLOADING,
+        EBUFSTATE_UNDISPATCH = EBUFSTATE_MIN,
+        EBUFSTATE_DISPATCHED,
         EBUFSTATE_DOWNLOADED,
-        EBUFSTATE_DOWNLOADERROR,
+        EBUFSTATE_FINISH,
         EBUFSTATE_MAX,
     };
 
@@ -35,6 +36,7 @@ private:
     struct ThreadInfo
     {
         //HANDLE  thread;
+        char*   proxy;
         int     group;
         int     order;
         int     puzzle;
@@ -46,22 +48,23 @@ private:
     int             m_iBegin;
     int             m_iEnd;
     int             m_iConNum;
-    int             m_iActiveConNum;
     int             m_iPuzNum;
+    int             m_iDispatchedNum;
     int             m_iDownloadedNum;
-    HANDLE*         m_pThreadHandles;
-    ThreadInfo*     m_pThreadInfo;
-    Data*           m_pData[2];
+    HANDLE*         m_ThreadHandles;
+    ThreadInfo*     m_ThreadInfo;
+    Data*           m_Data[2];
     int             m_iDataLen;
     int             m_iDataUsed[2];
     int             m_iFrontGroup;
     int             m_iBackGroup;
+    FILE*           m_pFile;
 
-    void    Init();
     void    Release();
     void    DispatchTask();
     int     SortThread();
     void    SwapThread(int i, int j);
+    bool    IsAllFinish(int group);
 
     static DWORD WINAPI Download(void* param);
 };
