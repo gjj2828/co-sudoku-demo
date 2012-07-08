@@ -8,7 +8,6 @@ CDownloadDatabase::CDownloadDatabase(const char* proxy, int begin, int end, int 
 , m_iDispatchedNum(0)
 , m_iDownloadedNum(0)
 , m_ThreadHandles(NULL)
-, m_ThreadInfo(NULL)
 , m_pFile(NULL)
 {
     if(proxy)
@@ -29,6 +28,8 @@ int CDownloadDatabase::Run()
 {
     int active_num, active_order, ret;
     int group, order;
+    ThreadInfo *info;
+    ThreadInfoMap::iterator it;
 
     printf("Download Percent:0.00%%\r");
 
@@ -36,13 +37,19 @@ int CDownloadDatabase::Run()
     {
         DispatchTask();
         active_num = SortThread();
+        //printf("active_num=%d\n", active_num);
         if(active_num <= 0) break;
         ret = WaitForMultipleObjects(active_num, m_ThreadHandles, false, INFINITE);
         active_order = ret - WAIT_OBJECT_0;
-        if(active_order >= active_num) continue;
+        if(active_order < 0 || active_order >= active_num) continue;
+        it = m_mapThreadInfo.find(m_ThreadHandles[active_order]);
+        if(it == m_mapThreadInfo.end() || !(it->second)) ERROR_RTN0("Can\'t find ThreadInfo in map!");
+        info    = it->second;
+        group   = info->group;
+        order   = info->order;
+        m_mapThreadInfo.erase(it);
         SAFE_CLOSEHANDLE(m_ThreadHandles[active_order]);
-        group = m_ThreadInfo[active_order].group;
-        order = m_ThreadInfo[active_order].order;
+        SAFE_DELETE(info);
         if(m_Data[group][order].state != EBUFSTATE_DOWNLOADED) return 0;
         m_Data[group][order].state = EBUFSTATE_FINISH;
         m_iDownloadedNum++;
@@ -71,7 +78,6 @@ int CDownloadDatabase::Init()
     m_iConNum           = min(m_iConNum, m_iPuzNum);
     m_iDataLen          = m_iConNum * DATAMULT;
     m_ThreadHandles     = new HANDLE[m_iConNum];
-    m_ThreadInfo        = new ThreadInfo[m_iConNum];
     m_Data[0]           = new Data[m_iDataLen];
     m_Data[1]           = new Data[m_iDataLen];
     m_iDataUsed[0]      = 0;
@@ -82,8 +88,6 @@ int CDownloadDatabase::Init()
     for(int i = 0; i < m_iConNum; i++)
     {
         m_ThreadHandles[i] = NULL;
-        if(m_bProxy) m_ThreadInfo[i].proxy = m_Proxy;
-        else m_ThreadInfo[i].proxy = NULL;
     }
     for(int i = 0; i < m_iDataLen; i++)
     {
@@ -103,7 +107,6 @@ int CDownloadDatabase::Init()
 void CDownloadDatabase::Release()
 {
     SAFE_DELETEA(m_ThreadHandles);
-    SAFE_DELETEA(m_ThreadInfo);
     SAFE_DELETEA(m_Data[0]);
     SAFE_DELETEA(m_Data[1]);
     SAFE_FCLOSE(m_pFile);
@@ -116,27 +119,31 @@ void CDownloadDatabase::DispatchTask()
         if(m_iDispatchedNum >= m_iPuzNum) break;
         if(m_ThreadHandles[i]) continue;
 
+        ThreadInfo* info = new ThreadInfo;
         if(m_iDataUsed[m_iFrontGroup] < m_iDataLen)
         {
-            m_ThreadInfo[i].group = m_iFrontGroup;
-            m_ThreadInfo[i].order = m_iDataUsed[m_iFrontGroup]++;
+            info->group = m_iFrontGroup;
+            info->order = m_iDataUsed[m_iFrontGroup]++;
         }
         else if(m_iDataUsed[m_iBackGroup] < m_iDataLen)
         {
-            m_ThreadInfo[i].group = m_iBackGroup;
-            m_ThreadInfo[i].order = m_iDataUsed[m_iBackGroup]++;
+            info->group = m_iBackGroup;
+            info->order = m_iDataUsed[m_iBackGroup]++;
         }
         else
         {
             break;
         }
 
-        Data* pData = &(m_Data[m_ThreadInfo[i].group][m_ThreadInfo[i].order]);
+        Data* pData = &(m_Data[info->group][info->order]);
         pData->state = EBUFSTATE_DISPATCHED;
-        m_ThreadInfo[i].data = pData;
-        m_ThreadInfo[i].puzzle = m_iBegin + m_iDispatchedNum;
+        info->data = pData;
+        info->puzzle = m_iBegin + m_iDispatchedNum;
         m_iDispatchedNum++;
-        m_ThreadHandles[i] = CreateThread(NULL, 0, Download, &(m_ThreadInfo[i]), 0, NULL);
+        if(m_bProxy) info->proxy = m_Proxy;
+        else info->proxy = NULL;
+        m_ThreadHandles[i] = CreateThread(NULL, 0, Download, info, 0, NULL);
+        m_mapThreadInfo[m_ThreadHandles[i]] = info;
     }
 }
 
@@ -154,8 +161,8 @@ int CDownloadDatabase::SortThread()
 
         for(int j = lastvalid - 1; j >= 0; j--)
         {
-            if(m_ThreadHandles[j] == NULL) continue;
             lastvalid = j;
+            if(m_ThreadHandles[j] == NULL) continue;
             break;
         }
 
@@ -172,12 +179,9 @@ void CDownloadDatabase::SwapThread(int i, int j)
     if(i < 0 || i > m_iConNum || j < 0 || j > m_iConNum) return;
 
     HANDLE handle = m_ThreadHandles[i];
-    ThreadInfo info = m_ThreadInfo[i];
 
     m_ThreadHandles[i] = m_ThreadHandles[j];
-    m_ThreadInfo[i]    = m_ThreadInfo[j];
     m_ThreadHandles[j] = handle;
-    m_ThreadInfo[j]    = info;
 }
 
 bool CDownloadDatabase::IsAllFinish(int group)
@@ -239,13 +243,15 @@ DWORD WINAPI CDownloadDatabase::Download(void* param)
         break;
     }
     fclose(pfr);
-    DeleteFile(temp_name);
     if(!bFound) ERROR_RTN0("Can\'t find puzzle!");
 
     strcpy(info->data->buf, p1);
     info->data->state = EBUFSTATE_DOWNLOADED;
 
-    Sleep(1000);
+    do 
+    {
+        Sleep(1000);
+    }while(!DeleteFile(temp_name));
 
     return 1;
 }

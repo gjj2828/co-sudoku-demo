@@ -158,14 +158,15 @@ void    main()
     printf("end=");
     if(!scanf("%d", &iEnd) || iEnd < iBegin || iEnd > ID_MAX) ERROR_EXIT("Wrong Input!");
 
-    printf("Please input the connection num:\n");
+    printf("Please input the connection num[1-%d]:\n", MAXIMUM_WAIT_OBJECTS);
     int iConNum;
     printf("connection num=");
-    if(!scanf("%d", &iConNum) || iConNum < 1) ERROR_EXIT("Wrong Input!");
+    if(!scanf("%d", &iConNum) || iConNum < 1 || iConNum >  MAXIMUM_WAIT_OBJECTS) ERROR_EXIT("Wrong Input!");
 
     char* pProxy = NULL;
     if(bProxy) pProxy = proxy;
-    IDownloadDatabase* p = new CDownloadDatabase(proxy, iBegin, iEnd, iConNum);
+    IDownloadDatabase* p = new CDownloadDatabase(pProxy, iBegin, iEnd, iConNum);
     if(!p->Init()) return;
     p->Run();
+    SAFE_DELETE(p);
 }

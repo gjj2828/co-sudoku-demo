@@ -7,6 +7,7 @@ class CDownloadDatabase: public IDownloadDatabase
 {
 public:
     CDownloadDatabase(const char* proxy, int begin, int end, int con_num);
+    ~CDownloadDatabase() {Release();}
 
     virtual int Init();
     virtual int Run();
@@ -43,6 +44,8 @@ private:
         Data*   data;
     };
 
+    typedef std::map<HANDLE, ThreadInfo*> ThreadInfoMap;
+
     bool            m_bProxy;
     char            m_Proxy[32];
     int             m_iBegin;
@@ -52,7 +55,7 @@ private:
     int             m_iDispatchedNum;
     int             m_iDownloadedNum;
     HANDLE*         m_ThreadHandles;
-    ThreadInfo*     m_ThreadInfo;
+    ThreadInfoMap   m_mapThreadInfo;
     Data*           m_Data[2];
     int             m_iDataLen;
     int             m_iDataUsed[2];

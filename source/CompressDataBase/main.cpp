@@ -74,6 +74,7 @@ int Compress(const char* in_name, const char* out_name, const char* def_name)
     char buffer[BUFLEN];
     UCHAR enbuffer[ENLEN];
     CompressionHeader header;
+    int count = 0;
     while(fgets(buffer, BUFLEN, in))
     {
         ComPuzExpr puzzle;
@@ -84,6 +85,8 @@ int Compress(const char* in_name, const char* out_name, const char* def_name)
         header.length = enlen;
         fwrite(enbuffer, sizeof(UCHAR), ENLEN, out);
         fwrite(&header, sizeof(CompressionHeader), 1, def);
+        count++;
+        printf("\rCompress %s:%d", in_name, count);
     }
 
     SAFE_FCLOSE(in);
@@ -111,6 +114,7 @@ void main()
         sprintf(OutName, "DataBase\\%s.db", g_FindData.name);
         sprintf(DefName, "DataBase\\%s.def", g_FindData.name);
         if(!Compress(InName, OutName, DefName)) goto END;
+        printf("\n");
     }while(_findnext(g_FindHandle, &g_FindData) == 0);
 END:
     Release();
