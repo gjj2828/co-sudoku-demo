@@ -9,8 +9,8 @@ class CGame: public IGame
 {
 public:
     CGame();
-    virtual int     Init();
-    virtual void    Run()       {}
+    virtual int     Init(HINSTANCE hInstance);
+    virtual void    Run();
     virtual void    Release();
 
 private:
@@ -22,9 +22,16 @@ private:
         EMODULE_MAX,
     };
 
+    HINSTANCE       m_hInstance;
+    HWND            m_hWnd;
     HMODULE         m_hModules[EMODULE_MAX];
     IPuzzleSystem*  m_pPuzzleSystem;
     IRenderSystem*  m_pRenderSystem;
+
+    int LoadDll();
+    int InitWindow();
+
+    static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 };
 
 #endif // __GAME_H__
