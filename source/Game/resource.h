@@ -3,7 +3,6 @@
 // Used by Game.rc
 //
 #define IDC_MENU                        101
-#define ID_Menu                         40001
 #define IDM_EXIT                        40002
 
 // Next default values for new objects

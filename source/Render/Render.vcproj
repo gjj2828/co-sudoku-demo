@@ -164,6 +164,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\RenderSystem.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\StdAfx.cpp"
 				>
 				<FileConfiguration

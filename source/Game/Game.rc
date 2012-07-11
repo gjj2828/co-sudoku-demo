@@ -54,9 +54,9 @@ END
 
 IDC_MENU MENU 
 BEGIN
-    POPUP "AA"
+    POPUP "²Ëµ¥"
     BEGIN
-        MENUITEM "BB",                          IDM_EXIT
+        MENUITEM "ÍË³ö",                          IDM_EXIT
     END
 END
 

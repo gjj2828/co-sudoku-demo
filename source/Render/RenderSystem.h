@@ -6,8 +6,14 @@
 class CRenderSystem: public IRenderSystem
 {
 public:
-    virtual int     Init()      {return 1;}
+    CRenderSystem();
+    virtual int     Init(HWND hwnd);
     virtual void    Release()   {this->~CRenderSystem();}
+    virtual void    Update();
+
+private:
+    HWND m_hWnd;
+    RECT m_ClientRect;
 };
 
 #endif // __RENDERSYSTEM_H__

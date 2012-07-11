@@ -24,6 +24,7 @@ private:
 
     HINSTANCE       m_hInstance;
     HWND            m_hWnd;
+    HBRUSH          m_hBkBrush;
     HMODULE         m_hModules[EMODULE_MAX];
     IPuzzleSystem*  m_pPuzzleSystem;
     IRenderSystem*  m_pRenderSystem;
@@ -31,7 +32,7 @@ private:
     int LoadDll();
     int InitWindow();
 
-    static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
+    static LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam);
 };
 
 #endif // __GAME_H__

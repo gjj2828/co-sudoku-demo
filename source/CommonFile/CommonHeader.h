@@ -35,6 +35,9 @@ enum
     EPUZZLEGRADE_MAX,
 };
 
+#define COL_WHITE   RGB(255, 255, 255)
+#define COL_BLACK   RGB(0, 0, 0)
+
 #define SAFE_FCLOSE(p)  \
 {                       \
     if(p) fclose(p);    \
@@ -76,6 +79,12 @@ enum
     if(p) CloseHandle(p);   \
     (p) = NULL;             \
 }
+
+#define SAFE_DELETEOBJECT(p) \
+{                           \
+    if(p) DeleteObject(p);   \
+    (p) = NULL;             \
+    }
 
 #define ERROR_MSG(context)  MessageBox(NULL, (context), "Error", MB_OK)
 
