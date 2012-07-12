@@ -23,7 +23,7 @@ int APIENTRY    WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCm
     {
         pGame->Run();
     }
-    pGame->Release();
+    SAFE_RELEASE(pGame);
     FreeLibrary(hGameDll);
     return 0;
 }

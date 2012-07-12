@@ -9,9 +9,10 @@ class CGame: public IGame
 {
 public:
     CGame();
-    virtual int     Init(HINSTANCE hInstance);
-    virtual void    Run();
-    virtual void    Release();
+    virtual int                 Init(HINSTANCE hInstance);
+    virtual void                Run();
+    virtual void                Release();
+    virtual GlobalEnviroment*   GetEnv() {return &m_env;}
 
 private:
     enum EModule
@@ -22,12 +23,11 @@ private:
         EMODULE_MAX,
     };
 
-    HINSTANCE       m_hInstance;
-    HWND            m_hWnd;
-    HBRUSH          m_hBkBrush;
-    HMODULE         m_hModules[EMODULE_MAX];
-    IPuzzleSystem*  m_pPuzzleSystem;
-    IRenderSystem*  m_pRenderSystem;
+    HINSTANCE           m_hInstance;
+    HWND                m_hWnd;
+    HBRUSH              m_hBkBrush;
+    HMODULE             m_hModules[EMODULE_MAX];
+    GlobalEnviroment    m_env;
 
     int LoadDll();
     int InitWindow();

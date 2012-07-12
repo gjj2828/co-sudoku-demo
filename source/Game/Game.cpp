@@ -8,10 +8,10 @@ CGame::CGame()
 : m_hInstance(NULL)
 , m_hWnd(NULL)
 , m_hBkBrush(NULL)
-, m_pPuzzleSystem(NULL)
-, m_pRenderSystem(NULL)
 {
     ZeroMemory(m_hModules, sizeof(HMODULE) * EMODULE_MAX);
+    ZeroMemory(&m_env, sizeof(GlobalEnviroment));
+    m_env.pGame = this;
 }
 
 int CGame::Init(HINSTANCE hInstance)
@@ -40,13 +40,14 @@ void CGame::Run()
 void    CGame::Release()
 {
     SAFE_DELETEOBJECT(m_hBkBrush);
-    SAFE_RELEASE(m_pPuzzleSystem);
-    SAFE_RELEASE(m_pRenderSystem);
+    SAFE_RELEASE(m_env.pPuzzleSystem);
+    SAFE_RELEASE(m_env.pRenderSystem);
     for(int i = EMODULE_MIN; i < EMODULE_MAX; i++)
     {
         SAFE_FREELIBRARY(m_hModules[i]);
     }
     UnregisterClass(CLASS_NAME, m_hInstance);
+    m_env.pGame = NULL;
     this->~CGame();
 }
 
@@ -61,9 +62,9 @@ int CGame::LoadDll()
     typedef IPuzzleSystem*  (*CreatePuzzleSystemFunc)();
     CreatePuzzleSystemFunc  fCreatePuzzleSystem = (CreatePuzzleSystemFunc)GetProcAddress(hModule, "CreatePuzzleSystem");
     if(!fCreatePuzzleSystem)    ERROR_RTN0("Can\'t get CreatePuzzleSystem function!");
-    m_pPuzzleSystem = fCreatePuzzleSystem();
-    if(!m_pPuzzleSystem)    ERROR_RTN0("CreatePuzzleSystem failed!");
-    if(!m_pPuzzleSystem->Init())    return 0;
+    m_env.pPuzzleSystem = fCreatePuzzleSystem();
+    if(!m_env.pPuzzleSystem)    ERROR_RTN0("CreatePuzzleSystem failed!");
+    if(!m_env.pPuzzleSystem->Init())    return 0;
 
     // EMODULE_RENDER
     hModule = LoadLibrary("Render.dll");
@@ -72,9 +73,9 @@ int CGame::LoadDll()
     typedef IRenderSystem*  (*CreateRenderSystemFunc)();
     CreateRenderSystemFunc  fCreateRenderSystem = (CreateRenderSystemFunc)GetProcAddress(hModule, "CreateRenderSystem");
     if(!fCreateRenderSystem)    ERROR_RTN0("Can\'t get CreateRenderSystem function!");
-    m_pRenderSystem = fCreateRenderSystem();
-    if(!m_pRenderSystem)    ERROR_RTN0("CreateRenderSystem failed!");
-    if(!m_pRenderSystem->Init(m_hWnd))    return 0;
+    m_env.pRenderSystem = fCreateRenderSystem();
+    if(!m_env.pRenderSystem)    ERROR_RTN0("CreateRenderSystem failed!");
+    if(!m_env.pRenderSystem->Init(m_hWnd))    return 0;
 
     return 1;
 }
@@ -123,6 +124,7 @@ LRESULT CGame::WndProc(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam)
         }
         break;
     case WM_PAINT:
+        gEnv->pRenderSystem->Update();
         break;
     case WM_DESTROY:
         PostQuitMessage(0);

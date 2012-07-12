@@ -123,11 +123,19 @@
 				>
 			</File>
 			<File
+				RelativePath=".\CommonModule.h"
+				>
+			</File>
+			<File
 				RelativePath=".\CompressionHeader.h"
 				>
 			</File>
 			<File
 				RelativePath=".\ComPuzExpr.h"
+				>
+			</File>
+			<File
+				RelativePath=".\GlobalEnviroment.h"
 				>
 			</File>
 			<File
