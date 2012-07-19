@@ -33,13 +33,17 @@ int CRenderSystem::Init(HWND hwnd)
         }
         else
         {
-            m_WVLine[i].pts[0]      = start;
-            m_WVLine[i].pts[1].x    = start.x;
+            //m_WVLine[i].pts[0].x    = start.x + WLW - 1;
+            m_WVLine[i].pts[0].x    = start.x;
+            m_WVLine[i].pts[0].y    = start.y - 1;
+            m_WVLine[i].pts[1].x    = m_WVLine[i].pts[0].x;
             m_WVLine[i].pts[1].y    = start.y + W - 1;
 
-            m_WHLine[i].pts[0]      = start;
+            m_WHLine[i].pts[0].x    = start.x - 1;
+            //m_WHLine[i].pts[0].y    = start.y + WLW - 1;
+            m_WHLine[i].pts[0].y    = start.y;
             m_WHLine[i].pts[1].x    = start.x + W - 1;
-            m_WHLine[i].pts[1].y    = start.y;
+            m_WHLine[i].pts[1].y    = m_WHLine[i].pts[0].y;
         }
     }
 
