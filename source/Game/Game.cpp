@@ -98,7 +98,7 @@ int CGame::InitWindow()
     if(!RegisterClass(&wc)) return 0;
 
     m_hWnd = CreateWindow( CLASS_NAME, WINDOW_NAME, WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX
-                         , CW_USEDEFAULT, CW_USEDEFAULT, 480, 520, NULL, LoadMenu(GetModuleHandle("Game"),  MAKEINTRESOURCE(IDC_MENU)), m_hInstance, NULL );
+                         , CW_USEDEFAULT, CW_USEDEFAULT, 480, 512, NULL, LoadMenu(GetModuleHandle("Game"),  MAKEINTRESOURCE(IDC_MENU)), m_hInstance, NULL );
 
     if(!m_hWnd) return 0;
 
