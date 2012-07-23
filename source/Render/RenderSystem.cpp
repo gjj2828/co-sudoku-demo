@@ -1,8 +1,19 @@
 #include "StdAfx.h"
 #include "RenderSystem.h"
 
-CRenderSystem::CRenderSystem(): m_hWnd(NULL)
+CRenderSystem::CRenderSystem()
+: m_hWnd(NULL)
+, m_hpFrame(NULL)
+, m_hpWL(NULL)
+, m_hpNL(NULL)
 {
+    memset(&m_ClientRect, 0, sizeof(RECT));
+    memset(&m_Start, 0, sizeof(POINT));
+    memset(m_Grids, 0, sizeof(GridData));
+    memset(m_NVLine, 0, sizeof(RECT));
+    memset(m_NHLine, 0, sizeof(RECT));
+    memset(m_WVLine, 0, sizeof(RECT));
+    memset(m_WHLine, 0, sizeof(RECT));
 }
 
 int CRenderSystem::Init(HWND hwnd)
@@ -14,83 +25,75 @@ int CRenderSystem::Init(HWND hwnd)
     int hight = m_ClientRect.bottom - m_ClientRect.top;
     if(width < W || hight < W) ERROR_RTN0("ClientRect is too small!");
 
-    POINT start;
-    start.x = m_ClientRect.left + (width - W) / 2;
-    start.y = m_ClientRect.top + (hight - W) / 2;
+    m_hpFrame   = CreatePen(PS_INSIDEFRAME, FLW, COL_BLACK);
+    m_hpWL      = CreatePen(PS_SOLID, WLW, COL_BLACK);
+    m_hpNL      = CreatePen(PS_SOLID, NLW, COL_BLACK);
 
-    m_WVLine[0].pts[0] = start;
+    m_Start.x = m_ClientRect.left + (width - W) / 2;
+    m_Start.y = m_ClientRect.top + (hight - W) / 2;
+
     for(int i = 0; i < WLN; i++)
     {
-        if(i > 0)
-        {
-            m_WVLine[i]              = m_WVLine[i - 1];
-            m_WVLine[i].pts[0].x    += (WLW + BGW);
-            m_WVLine[i].pts[1].x     = m_WVLine[i].pts[0].x;
+        m_WVLine[i].pts[0].x = m_Start.x + FLW + BGW * (i + 1) + WLW * i + WLW / 2;
+        m_WVLine[i].pts[0].y = m_Start.y;
+        m_WVLine[i].pts[1].x = m_WVLine[i].pts[0].x;
+        m_WVLine[i].pts[1].y = m_WVLine[i].pts[0].y + W - 1;
 
-            m_WHLine[i]              = m_WHLine[i - 1];
-            m_WHLine[i].pts[0].y    += (WLW + BGW);
-            m_WHLine[i].pts[1].y     = m_WHLine[i].pts[0].y;
-        }
-        else
-        {
-            //m_WVLine[i].pts[0].x    = start.x + WLW - 1;
-            m_WVLine[i].pts[0].x    = start.x;
-            m_WVLine[i].pts[0].y    = start.y - 1;
-            m_WVLine[i].pts[1].x    = m_WVLine[i].pts[0].x;
-            m_WVLine[i].pts[1].y    = start.y + W - 1;
-
-            m_WHLine[i].pts[0].x    = start.x - 1;
-            //m_WHLine[i].pts[0].y    = start.y + WLW - 1;
-            m_WHLine[i].pts[0].y    = start.y;
-            m_WHLine[i].pts[1].x    = start.x + W - 1;
-            m_WHLine[i].pts[1].y    = m_WHLine[i].pts[0].y;
-        }
+        m_WHLine[i].pts[0].x = m_Start.x;
+        m_WHLine[i].pts[0].y = m_Start.y + FLW + BGW * (i + 1) + WLW * i + WLW / 2;
+        m_WHLine[i].pts[1].x = m_WHLine[i].pts[0].x + W - 1;
+        m_WHLine[i].pts[1].y = m_WHLine[i].pts[0].y;
     }
 
+    for(int i = 0; i < BGLN; i++)
+    {
+        for(int j = 0; j < NLBGN; j++)
+        {
+            int index = NLBGN * i + j;
+            m_NVLine[index].pts[0].x = m_Start.x + FLW + (BGW + WLW) * i + GW * (j + 1) + NLW * j + NLW / 2;
+            m_NVLine[index].pts[0].y = m_Start.y;
+            m_NVLine[index].pts[1].x = m_NVLine[index].pts[0].x;
+            m_NVLine[index].pts[1].y = m_NVLine[index].pts[0].y + W - 1;
 
+            m_NHLine[index].pts[0].x = m_Start.x;
+            m_NHLine[index].pts[0].y = m_Start.y + FLW + (BGW + WLW) * i + GW * (j + 1) + NLW * j + NLW / 2;
+            m_NHLine[index].pts[1].x = m_NHLine[index].pts[0].x + W - 1;
+            m_NHLine[index].pts[1].y = m_NHLine[index].pts[0].y;
+        }
+    }
 
     return 1;
 }
 
+void CRenderSystem::Release()
+{
+    SAFE_DELETEOBJECT(m_hpFrame);
+    SAFE_DELETEOBJECT(m_hpWL);
+    SAFE_DELETEOBJECT(m_hpNL);
+    for(int i = 0; i < GAN; i++)
+    {
+        SAFE_DELETEOBJECT(m_Grids[i].hrgn);
+    }
+    this->~CRenderSystem();
+}
+
 void CRenderSystem::Update()
 {
-    /*
-    POINT pts[2];
-    pts[0].x = m_ClientRect.left;
-    pts[0].y = m_ClientRect.top;
-    pts[1].x = m_ClientRect.right;
-    pts[1].y = m_ClientRect.bottom;
-    //HDC hdc = GetDC(m_hWnd);
     PAINTSTRUCT ps;
     HDC hdc = BeginPaint(m_hWnd, &ps);
-    //HPEN hpen = CreatePen(PS_SOLID, 5, COL_BLACK);
-    //SelectObject(hdc, hpen);
-    HFONT hfont = CreateFont(32, 0, 0, 0, FW_NORMAL, false, false, false, GB2312_CHARSET, OUT_CHARACTER_PRECIS, CLIP_CHARACTER_PRECIS, DEFAULT_QUALITY, FF_MODERN, NULL);
-    SelectObject(hdc, hfont);
-    SetDCPenColor(hdc, COL_BLACK);
-    RECT rect = {10, 10, 42, 42};
-    //DrawText(hdc, "0", 1, &rect, DT_CENTER | DT_VCENTER);
-    DrawText(hdc, "0", 1, &rect, DT_CENTER | DT_VCENTER);
-    HBRUSH hbrush = CreateSolidBrush(COL_BLACK);
-    FrameRect(hdc, &rect, hbrush);
-    //Rectangle(hdc, rect.left, rect.top, rect.right, rect.bottom);
-    //char* text = "≤‚ ‘";
-    //TextOut(hdc, 10, 10, text, strlen(text));
-    //Polyline(hdc, pts, 2);
-    //ReleaseDC(m_hWnd, hdc);
-    EndPaint(m_hWnd, &ps);
-    DeleteObject(hfont);
-    DeleteObject(hbrush);
-    //DeleteObject(hpen);
-    */
-
-    HPEN hpen = CreatePen(PS_SOLID, 2, COL_BLACK);
-    HDC hdc = GetDC(m_hWnd);
-    SelectObject(hdc, hpen);
+    SelectObject(hdc, m_hpFrame);
+    Rectangle(hdc, m_Start.x, m_Start.y, m_Start.x + W, m_Start.y + W);
+    SelectObject(hdc, m_hpWL);
     for(int i = 0; i < WLN; i++)
     {
         Polyline(hdc, m_WVLine[i].pts, 2);
         Polyline(hdc, m_WHLine[i].pts, 2);
     }
-    ReleaseDC(m_hWnd, hdc);
+    SelectObject(hdc, m_hpNL);
+    for(int i = 0; i < NLN; i++)
+    {
+        Polyline(hdc, m_NVLine[i].pts, 2);
+        Polyline(hdc, m_NHLine[i].pts, 2);
+    }
+    EndPaint(m_hWnd, &ps);
 }

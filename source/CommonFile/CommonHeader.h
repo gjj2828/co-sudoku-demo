@@ -37,6 +37,7 @@ enum
 
 #define COL_WHITE   RGB(255, 255, 255)
 #define COL_BLACK   RGB(0, 0, 0)
+#define COL_RED     RGB(255, 0, 0)
 
 #define SAFE_FCLOSE(p)  \
 {                       \
