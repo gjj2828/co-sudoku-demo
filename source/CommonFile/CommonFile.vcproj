@@ -154,6 +154,10 @@
 				RelativePath=".\IRenderSystem.h"
 				>
 			</File>
+			<File
+				RelativePath=".\RenderData.h"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="资源文件"
