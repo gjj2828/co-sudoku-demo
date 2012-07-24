@@ -25,6 +25,7 @@ private:
         NLBGN   = 2,
         BGW     = GW * GBGLN + NLW * NLBGN,
         BGLN    = 3,
+        GLN     = GBGLN * BGLN,
         BGAN    = BGLN * BGLN,
         GAN     = GBGAN * BGAN,
         FLN     = 2,
@@ -35,7 +36,7 @@ private:
 
     struct GridData
     {
-        POINT   start;
+        RECT    rect;
         HRGN    hrgn;
         int     num;
     };
@@ -50,6 +51,10 @@ private:
     HPEN        m_hpFrame;
     HPEN        m_hpWL;
     HPEN        m_hpNL;
+
+    HBRUSH      m_hbChoiced;
+
+    HFONT       m_hFont;
 
     POINT       m_Start;
     GridData    m_Grids[GAN];

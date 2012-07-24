@@ -6,6 +6,8 @@ CRenderSystem::CRenderSystem()
 , m_hpFrame(NULL)
 , m_hpWL(NULL)
 , m_hpNL(NULL)
+, m_hFont(NULL)
+, m_hbChoiced(NULL)
 {
     memset(&m_ClientRect, 0, sizeof(RECT));
     memset(&m_Start, 0, sizeof(POINT));
@@ -28,6 +30,10 @@ int CRenderSystem::Init(HWND hwnd)
     m_hpFrame   = CreatePen(PS_INSIDEFRAME, FLW, COL_BLACK);
     m_hpWL      = CreatePen(PS_SOLID, WLW, COL_BLACK);
     m_hpNL      = CreatePen(PS_SOLID, NLW, COL_BLACK);
+
+    m_hbChoiced = CreateSolidBrush(COL_GREY);
+
+    m_hFont     = CreateFont(GW, 0, 0, 0, FW_NORMAL, false, false, false, GB2312_CHARSET, OUT_CHARACTER_PRECIS, CLIP_CHARACTER_PRECIS, DEFAULT_QUALITY, FF_MODERN, NULL);
 
     m_Start.x = m_ClientRect.left + (width - W) / 2;
     m_Start.y = m_ClientRect.top + (hight - W) / 2;
@@ -62,6 +68,30 @@ int CRenderSystem::Init(HWND hwnd)
         }
     }
 
+    for(int i = 0; i < BGLN; i++)
+    {
+        for(int j = 0; j < BGLN; j++)
+        {
+            for(int k = 0; k < GBGLN; k++)
+            {
+                for(int l = 0; l < GBGLN; l++)
+                {
+                    int index = GLN * (GBGLN * i + k) + GBGLN * j + l;
+                    //int row     = GBGLN * i + k;
+                    //int column  = GBGLN * j + l;
+                    //int index   = GLN * row + column;
+
+                    m_Grids[index].rect.top     = m_Start.y + FLW + (BGW + WLW) * i + (GW + NLW) * k;
+                    m_Grids[index].rect.left    = m_Start.x + FLW + (BGW + WLW) * j + (GW + NLW) * l;
+                    m_Grids[index].rect.bottom  = m_Grids[index].rect.top + GW;
+                    m_Grids[index].rect.right   = m_Grids[index].rect.left + GW;
+
+                    m_Grids[index].hrgn = CreateRectRgnIndirect(&(m_Grids[index].rect));
+                }
+            }
+        }
+    }
+
     return 1;
 }
 
@@ -70,6 +100,8 @@ void CRenderSystem::Release()
     SAFE_DELETEOBJECT(m_hpFrame);
     SAFE_DELETEOBJECT(m_hpWL);
     SAFE_DELETEOBJECT(m_hpNL);
+    SAFE_DELETEOBJECT(m_hbChoiced);
+    SAFE_DELETEOBJECT(m_hFont);
     for(int i = 0; i < GAN; i++)
     {
         SAFE_DELETEOBJECT(m_Grids[i].hrgn);
@@ -94,6 +126,14 @@ void CRenderSystem::Update()
     {
         Polyline(hdc, m_NVLine[i].pts, 2);
         Polyline(hdc, m_NHLine[i].pts, 2);
+    }
+    SelectObject(hdc, m_hFont);
+    SetBkMode(hdc, TRANSPARENT);
+    for(int i = 0; i < GAN; i++)
+    {
+        if(i % 2 == 0) FillRect(hdc, &(m_Grids[i].rect), m_hbChoiced);
+        char num = '0' + m_Grids[i].num;
+        DrawText(hdc, &num, 1, &(m_Grids[i].rect), DT_CENTER | DT_VCENTER);
     }
     EndPaint(m_hWnd, &ps);
 }
