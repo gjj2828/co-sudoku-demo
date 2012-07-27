@@ -9,9 +9,8 @@ CGame::CGame()
 , m_hWnd(NULL)
 , m_hBkBrush(NULL)
 {
-    ZeroMemory(m_hModules       ,sizeof(HMODULE) * EMODULE_MAX);
-    ZeroMemory(&m_env           ,sizeof(GlobalEnviroment));
-    ZeroMemory(&m_RenderData    ,sizeof(RenderData));
+    ZeroMemory(m_hModules, sizeof(HMODULE) * EMODULE_MAX);
+    ZeroMemory(&m_env, sizeof(GlobalEnviroment));
     m_env.pGame = this;
 }
 
@@ -40,7 +39,6 @@ void CGame::Run()
 
 void    CGame::Release()
 {
-    UnregisterClass(CLASS_NAME, m_hInstance);
     SAFE_DELETEOBJECT(m_hBkBrush);
     SAFE_RELEASE(m_env.pPuzzleSystem);
     SAFE_RELEASE(m_env.pRenderSystem);
@@ -48,10 +46,7 @@ void    CGame::Release()
     {
         SAFE_FREELIBRARY(m_hModules[i]);
     }
-    for(int i = 0; i < RenderData::GAN; i++)
-    {
-        SAFE_DELETEOBJECT(m_RenderData.m_Grids[i].hrgn);
-    }
+    UnregisterClass(CLASS_NAME, m_hInstance);
     m_env.pGame = NULL;
     this->~CGame();
 }
@@ -80,7 +75,7 @@ int CGame::LoadDll()
     if(!fCreateRenderSystem)    ERROR_RTN0("Can\'t get CreateRenderSystem function!");
     m_env.pRenderSystem = fCreateRenderSystem();
     if(!m_env.pRenderSystem)    ERROR_RTN0("CreateRenderSystem failed!");
-    if(!m_env.pRenderSystem->Init(m_hWnd, &m_RenderData))    return 0;
+    if(!m_env.pRenderSystem->Init(m_hWnd))    return 0;
 
     return 1;
 }
@@ -129,7 +124,7 @@ LRESULT CGame::WndProc(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam)
         }
         break;
     case WM_PAINT:
-        gEnv->pRenderSystem->Update(gEnv->pGame->GetRenderData());
+        gEnv->pRenderSystem->Update();
         break;
     case WM_DESTROY:
         PostQuitMessage(0);

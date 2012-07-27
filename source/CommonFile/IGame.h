@@ -2,7 +2,6 @@
 #define __IGAME_H__
 
 #include <GlobalEnviroment.h>
-#include <RenderData.h>
 
 class IGame
 {
@@ -11,7 +10,6 @@ public:
     virtual void                Run()                       = 0;
     virtual void                Release()                   = 0;
     virtual GlobalEnviroment*   GetEnv()                    = 0;
-    virtual RenderData*         GetRenderData()             = 0;
 };
 
 #endif // __IGAME_H__
