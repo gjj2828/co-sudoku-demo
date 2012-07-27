@@ -1,9 +1,9 @@
 #ifndef __GLOBALENVIROMENT_H__
 #define __GLOBALENVIROMENT_H__
 
-struct IGame;
-struct IPuzzleSystem;
-struct IRenderSystem;
+class IGame;
+class IPuzzleSystem;
+class IRenderSystem;
 
 struct GlobalEnviroment
 {

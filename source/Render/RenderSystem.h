@@ -6,12 +6,6 @@
 class CRenderSystem: public IRenderSystem
 {
 public:
-    CRenderSystem();
-    virtual int     Init(HWND hwnd);
-    virtual void    Release();
-    virtual void    Update();
-
-private:
     enum
     {
         FLW     = 2,
@@ -34,6 +28,12 @@ private:
         W       = BGW * BGLN + FLW + FLN + WLW * WLN,
     };
 
+    CRenderSystem();
+    virtual int     Init(HWND hwnd, IGridManager*& gm);
+    virtual void    Release();
+    virtual void    Update();
+
+private:
     struct GridData
     {
         RECT    rect;

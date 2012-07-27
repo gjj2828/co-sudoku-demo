@@ -1,10 +1,12 @@
 #ifndef __IRENDERSYSTEM_H__
 #define __IRENDERSYSTEM_H__
 
+#include <IGridManager.h>
+
 class IRenderSystem
 {
 public:
-    virtual int     Init(HWND hwnd) = 0;
+    virtual int     Init(HWND hwnd, IGridManager*& gm) = 0;
     virtual void    Release()       = 0;
     virtual void    Update()        = 0;
 };

@@ -18,7 +18,7 @@ CRenderSystem::CRenderSystem()
     memset(m_WHLine, 0, sizeof(RECT));
 }
 
-int CRenderSystem::Init(HWND hwnd)
+int CRenderSystem::Init(HWND hwnd, IGridManager*& gm)
 {
     m_hWnd = hwnd;
     GetClientRect(m_hWnd, &m_ClientRect);

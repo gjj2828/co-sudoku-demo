@@ -8,6 +8,7 @@ CGame::CGame()
 : m_hInstance(NULL)
 , m_hWnd(NULL)
 , m_hBkBrush(NULL)
+, m_pGridManager(NULL)
 {
     ZeroMemory(m_hModules, sizeof(HMODULE) * EMODULE_MAX);
     ZeroMemory(&m_env, sizeof(GlobalEnviroment));
@@ -42,6 +43,7 @@ void    CGame::Release()
     SAFE_DELETEOBJECT(m_hBkBrush);
     SAFE_RELEASE(m_env.pPuzzleSystem);
     SAFE_RELEASE(m_env.pRenderSystem);
+    SAFE_DELETE(m_pGridManager);
     for(int i = EMODULE_MIN; i < EMODULE_MAX; i++)
     {
         SAFE_FREELIBRARY(m_hModules[i]);
@@ -75,7 +77,8 @@ int CGame::LoadDll()
     if(!fCreateRenderSystem)    ERROR_RTN0("Can\'t get CreateRenderSystem function!");
     m_env.pRenderSystem = fCreateRenderSystem();
     if(!m_env.pRenderSystem)    ERROR_RTN0("CreateRenderSystem failed!");
-    if(!m_env.pRenderSystem->Init(m_hWnd))    return 0;
+    if(!m_env.pRenderSystem->Init(m_hWnd, m_pGridManager))    return 0;
+    if(!m_pGridManager) ERROR_RTN0("Can\'t, create GridManager!");
 
     return 1;
 }

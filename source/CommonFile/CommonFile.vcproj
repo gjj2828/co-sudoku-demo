@@ -147,6 +147,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\IGridManager.h"
+				>
+			</File>
+			<File
 				RelativePath=".\IPuzzleSystem.h"
 				>
 			</File>

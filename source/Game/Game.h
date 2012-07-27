@@ -4,6 +4,7 @@
 #include <IGame.h>
 #include <IPuzzleSystem.h>
 #include <IRenderSystem.h>
+#include <IGridManager.h>
 
 class CGame: public IGame
 {
@@ -28,6 +29,7 @@ private:
     HBRUSH              m_hBkBrush;
     HMODULE             m_hModules[EMODULE_MAX];
     GlobalEnviroment    m_env;
+    IGridManager*       m_pGridManager;
 
     int LoadDll();
     int InitWindow();
