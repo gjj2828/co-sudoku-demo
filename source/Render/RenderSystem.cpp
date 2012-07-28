@@ -1,5 +1,6 @@
 #include "StdAfx.h"
 #include "RenderSystem.h"
+#include "GridManager.h"
 
 CRenderSystem::CRenderSystem()
 : m_hWnd(NULL)
@@ -68,6 +69,7 @@ int CRenderSystem::Init(HWND hwnd, IGridManager*& gm)
         }
     }
 
+    CGridManager* pGridManager = new CGridManager;
     for(int i = 0; i < BGLN; i++)
     {
         for(int j = 0; j < BGLN; j++)
@@ -86,11 +88,14 @@ int CRenderSystem::Init(HWND hwnd, IGridManager*& gm)
                     m_Grids[index].rect.bottom  = m_Grids[index].rect.top + GW;
                     m_Grids[index].rect.right   = m_Grids[index].rect.left + GW;
 
-                    m_Grids[index].hrgn = CreateRectRgnIndirect(&(m_Grids[index].rect));
+                    //m_Grids[index].hrgn = CreateRectRgnIndirect(&(m_Grids[index].rect));
+                    pGridManager->SetGridRGN(index, CreateRectRgnIndirect(&(m_Grids[index].rect)));
                 }
             }
         }
     }
+
+    gm = pGridManager;
 
     return 1;
 }
@@ -102,10 +107,7 @@ void CRenderSystem::Release()
     SAFE_DELETEOBJECT(m_hpNL);
     SAFE_DELETEOBJECT(m_hbChoiced);
     SAFE_DELETEOBJECT(m_hFont);
-    for(int i = 0; i < GAN; i++)
-    {
-        SAFE_DELETEOBJECT(m_Grids[i].hrgn);
-    }
+
     this->~CRenderSystem();
 }
 

@@ -37,7 +37,6 @@ private:
     struct GridData
     {
         RECT    rect;
-        HRGN    hrgn;
         int     num;
     };
     struct LineData
