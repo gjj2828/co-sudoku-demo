@@ -9,6 +9,7 @@ CGame::CGame()
 , m_hWnd(NULL)
 , m_hBkBrush(NULL)
 , m_pGridManager(NULL)
+, m_iSelectedGrid(IGridManager::INVALID_GRID)
 {
     ZeroMemory(m_hModules, sizeof(HMODULE) * EMODULE_MAX);
     ZeroMemory(&m_env, sizeof(GlobalEnviroment));
@@ -51,6 +52,21 @@ void    CGame::Release()
     UnregisterClass(CLASS_NAME, m_hInstance);
     m_env.pGame = NULL;
     this->~CGame();
+}
+
+void CGame::Paint()
+{
+    POINT pos;
+    GetCursorPos(&pos);
+    ScreenToClient(m_hWnd, &pos);
+
+    m_iSelectedGrid = m_pGridManager->GetGrid(pos);
+
+}
+
+void CGame::MouseMove(int x, int y)
+{
+
 }
 
 int CGame::LoadDll()
@@ -127,7 +143,31 @@ LRESULT CGame::WndProc(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam)
         }
         break;
     case WM_PAINT:
-        gEnv->pRenderSystem->Update();
+        //gEnv->pRenderSystem->Update();
+        {
+            HDC hdc = GetDC(hwnd);
+            POINT pt;
+            char buf[16];
+            GetCursorPos(&pt);
+            ScreenToClient(hwnd, &pt);
+            sprintf(buf, "(%d, %d)", pt.x, pt.y);
+            TextOut(hdc, 0, 0, buf, strlen(buf));
+            ReleaseDC(hwnd, hdc);
+        }
+        break;
+    case WM_MOUSEMOVE:
+        /*
+        {
+            HDC hdc = GetDC(hwnd);
+            POINT pt;
+            char buf[16];
+            GetCursorPos(&pt);
+            ScreenToClient(hwnd, &pt);
+            sprintf(buf, "(%d, %d)", pt.x, pt.y);
+            TextOut(hdc, 0, 0, buf, strlen(buf));
+            ReleaseDC(hwnd, hdc);
+        }
+        */
         break;
     case WM_DESTROY:
         PostQuitMessage(0);

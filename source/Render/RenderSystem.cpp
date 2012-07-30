@@ -70,6 +70,10 @@ int CRenderSystem::Init(HWND hwnd, IGridManager*& gm)
     }
 
     CGridManager* pGridManager = new CGridManager;
+
+    RECT FrameRect = {m_Start.x, m_Start.y, m_Start.x + W, m_Start.y + W};
+    pGridManager->SetFrameRGN(CreateRectRgnIndirect(&FrameRect));
+
     for(int i = 0; i < BGLN; i++)
     {
         for(int j = 0; j < BGLN; j++)

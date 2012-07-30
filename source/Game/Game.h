@@ -14,6 +14,8 @@ public:
     virtual void                Run();
     virtual void                Release();
     virtual GlobalEnviroment*   GetEnv() {return &m_env;}
+    virtual void                Paint();
+    virtual void                MouseMove(int x, int y);
 
 private:
     enum EModule
@@ -30,6 +32,7 @@ private:
     HMODULE             m_hModules[EMODULE_MAX];
     GlobalEnviroment    m_env;
     IGridManager*       m_pGridManager;
+    int                 m_iSelectedGrid;
 
     int LoadDll();
     int InitWindow();

@@ -8,8 +8,7 @@ public:
     {
         INVALID_GRID = 0xffff,
     };
-    virtual void SetPos(POINT pos) = 0;
-    virtual int GetSelectedGrid() = 0;
+    virtual int GetGrid(POINT pos) = 0;
 };
 
 #endif // __IGRIDMANAGER_H__
