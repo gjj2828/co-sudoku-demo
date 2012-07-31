@@ -28,6 +28,8 @@ int CGridManager::GetGrid(POINT pos)
         if(IsPointInRgn(m_hpGridRGN[m_iLastGrid], pos)) return m_iLastGrid;
     }
 
+    if(!IsPointInRgn(m_hpFrameRGN, pos)) return INVALID_GRID;
+
     for(int i = 0; i < CRenderSystem::GAN; i++)
     {
         if(IsPointInRgn(m_hpGridRGN[i], pos)) return i;

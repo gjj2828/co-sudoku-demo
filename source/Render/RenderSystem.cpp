@@ -156,7 +156,7 @@ void CRenderSystem::SetSelectedGrid(int grid)
 
 void CRenderSystem::DrawGrid(HDC hdc, int grid)
 {
-    if(grid < 0 || grid >= IGridManager::INVALID_GRID) return;
+    if(grid < 0 || grid >= GAN) return;
 
     HBRUSH hpBrush;
     if(grid == m_iSelectedGrid) hpBrush = m_hbChoiced;
