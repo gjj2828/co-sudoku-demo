@@ -6,9 +6,11 @@
 class IRenderSystem
 {
 public:
-    virtual int     Init(HWND hwnd, IGridManager*& gm) = 0;
-    virtual void    Release()       = 0;
-    virtual void    Update()        = 0;
+    virtual int     Init(HWND hwnd, IGridManager*& gm)  = 0;
+    virtual void    Release()                           = 0;
+    virtual void    Update()                            = 0;
+    virtual void    Update(int grid)                    = 0;
+    virtual void    SetSelectedGrid(int grid)           = 0;
 };
 
 #endif // __IRENDERSYSTEM_H__

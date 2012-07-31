@@ -28,13 +28,14 @@ int CRenderSystem::Init(HWND hwnd, IGridManager*& gm)
     int hight = m_ClientRect.bottom - m_ClientRect.top;
     if(width < W || hight < W) ERROR_RTN0("ClientRect is too small!");
 
-    m_hpFrame   = CreatePen(PS_INSIDEFRAME, FLW, COL_BLACK);
-    m_hpWL      = CreatePen(PS_SOLID, WLW, COL_BLACK);
-    m_hpNL      = CreatePen(PS_SOLID, NLW, COL_BLACK);
+    m_hpFrame       = CreatePen(PS_INSIDEFRAME, FLW, COL_BLACK);
+    m_hpWL          = CreatePen(PS_SOLID, WLW, COL_BLACK);
+    m_hpNL          = CreatePen(PS_SOLID, NLW, COL_BLACK);
 
-    m_hbChoiced = CreateSolidBrush(COL_GREY);
+    m_hbChoiced     = CreateSolidBrush(COL_GREY);
+    m_hbUnChoiced   = CreateSolidBrush(COL_WHITE);
 
-    m_hFont     = CreateFont(GW, 0, 0, 0, FW_NORMAL, false, false, false, GB2312_CHARSET, OUT_CHARACTER_PRECIS, CLIP_CHARACTER_PRECIS, DEFAULT_QUALITY, FF_MODERN, NULL);
+    m_hFont         = CreateFont(GW, 0, 0, 0, FW_NORMAL, false, false, false, GB2312_CHARSET, OUT_CHARACTER_PRECIS, CLIP_CHARACTER_PRECIS, DEFAULT_QUALITY, FF_MODERN, NULL);
 
     m_Start.x = m_ClientRect.left + (width - W) / 2;
     m_Start.y = m_ClientRect.top + (hight - W) / 2;
@@ -110,6 +111,7 @@ void CRenderSystem::Release()
     SAFE_DELETEOBJECT(m_hpWL);
     SAFE_DELETEOBJECT(m_hpNL);
     SAFE_DELETEOBJECT(m_hbChoiced);
+    SAFE_DELETEOBJECT(m_hbUnChoiced);
     SAFE_DELETEOBJECT(m_hFont);
 
     this->~CRenderSystem();
@@ -133,13 +135,36 @@ void CRenderSystem::Update()
         Polyline(hdc, m_NVLine[i].pts, 2);
         Polyline(hdc, m_NHLine[i].pts, 2);
     }
-    SelectObject(hdc, m_hFont);
-    SetBkMode(hdc, TRANSPARENT);
     for(int i = 0; i < GAN; i++)
     {
-        if(i % 2 == 0) FillRect(hdc, &(m_Grids[i].rect), m_hbChoiced);
-        char num = '0' + m_Grids[i].num;
-        DrawText(hdc, &num, 1, &(m_Grids[i].rect), DT_CENTER | DT_VCENTER);
+        DrawGrid(hdc, i);
     }
     EndPaint(m_hWnd, &ps);
+}
+
+void CRenderSystem::Update(int grid)
+{
+    HDC hdc = GetDC(m_hWnd);
+    DrawGrid(hdc, grid);
+    ReleaseDC(m_hWnd, hdc);
+}
+
+void CRenderSystem::SetSelectedGrid(int grid)
+{
+    m_iSelectedGrid = grid;
+}
+
+void CRenderSystem::DrawGrid(HDC hdc, int grid)
+{
+    if(grid < 0 || grid >= IGridManager::INVALID_GRID) return;
+
+    HBRUSH hpBrush;
+    if(grid == m_iSelectedGrid) hpBrush = m_hbChoiced;
+    else hpBrush = m_hbUnChoiced;
+
+    SetBkMode(hdc, TRANSPARENT);
+    FillRect(hdc, &(m_Grids[grid].rect), hpBrush);
+    SelectObject(hdc, m_hFont);
+    char num = '0' + m_Grids[grid].num;
+    DrawText(hdc, &num, 1, &(m_Grids[grid].rect), DT_CENTER | DT_VCENTER);
 }

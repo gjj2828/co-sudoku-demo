@@ -32,6 +32,8 @@ public:
     virtual int     Init(HWND hwnd, IGridManager*& gm);
     virtual void    Release();
     virtual void    Update();
+    virtual void    Update(int ogrid);
+    virtual void    SetSelectedGrid(int grid);
 
 private:
     struct GridData
@@ -52,6 +54,7 @@ private:
     HPEN        m_hpNL;
 
     HBRUSH      m_hbChoiced;
+    HBRUSH      m_hbUnChoiced;
 
     HFONT       m_hFont;
 
@@ -61,6 +64,10 @@ private:
     LineData    m_NHLine[NLN];
     LineData    m_WVLine[WLN];
     LineData    m_WHLine[WLN];
+
+    int         m_iSelectedGrid;
+
+    void DrawGrid(HDC hdc, int grid);
 };
 
 #endif // __RENDERSYSTEM_H__

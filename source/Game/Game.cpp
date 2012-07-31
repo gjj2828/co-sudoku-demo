@@ -62,11 +62,22 @@ void CGame::Paint()
 
     m_iSelectedGrid = m_pGridManager->GetGrid(pos);
 
+    m_env.pRenderSystem->SetSelectedGrid(m_iSelectedGrid);
+    m_env.pRenderSystem->Update();
 }
 
 void CGame::MouseMove(int x, int y)
 {
+    POINT pos = {x, y};
 
+    int grid = m_pGridManager->GetGrid(pos);
+    if(grid == m_iSelectedGrid) return;
+
+    m_env.pRenderSystem->SetSelectedGrid(grid);
+    m_env.pRenderSystem->Update(m_iSelectedGrid);
+    m_env.pRenderSystem->Update(grid);
+
+    m_iSelectedGrid = grid;
 }
 
 int CGame::LoadDll()
@@ -143,31 +154,10 @@ LRESULT CGame::WndProc(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam)
         }
         break;
     case WM_PAINT:
-        //gEnv->pRenderSystem->Update();
-        {
-            HDC hdc = GetDC(hwnd);
-            POINT pt;
-            char buf[16];
-            GetCursorPos(&pt);
-            ScreenToClient(hwnd, &pt);
-            sprintf(buf, "(%d, %d)", pt.x, pt.y);
-            TextOut(hdc, 0, 0, buf, strlen(buf));
-            ReleaseDC(hwnd, hdc);
-        }
+        gEnv->pGame->Paint();
         break;
     case WM_MOUSEMOVE:
-        /*
-        {
-            HDC hdc = GetDC(hwnd);
-            POINT pt;
-            char buf[16];
-            GetCursorPos(&pt);
-            ScreenToClient(hwnd, &pt);
-            sprintf(buf, "(%d, %d)", pt.x, pt.y);
-            TextOut(hdc, 0, 0, buf, strlen(buf));
-            ReleaseDC(hwnd, hdc);
-        }
-        */
+        gEnv->pGame->MouseMove(LOWORD(lparam), HIWORD(lparam));
         break;
     case WM_DESTROY:
         PostQuitMessage(0);
