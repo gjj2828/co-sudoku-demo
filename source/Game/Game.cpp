@@ -31,11 +31,24 @@ int CGame::Init(HINSTANCE hInstance)
 
 void CGame::Run()
 {
-    MSG msg;
-    while(GetMessage(&msg, NULL, 0, 0))
+    while(1)
     {
-        TranslateMessage(&msg);
-        DispatchMessage(&msg);
+        MSG Msg;
+        bool bQuit = false;
+
+        while(PeekMessage(&Msg, NULL, 0, 0, PM_REMOVE))
+        {
+            if(Msg.message == WM_QUIT)
+            {
+                bQuit = true;
+                break;
+            }
+
+            TranslateMessage(&Msg);
+            DispatchMessage(&Msg);
+        }
+
+        if(bQuit) break;
     }
 }
 
