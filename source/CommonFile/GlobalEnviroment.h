@@ -4,12 +4,14 @@
 class IGame;
 class IPuzzleSystem;
 class IRenderSystem;
+class INetworkSystem;
 
 struct GlobalEnviroment
 {
     IGame*          pGame;
     IPuzzleSystem*  pPuzzleSystem;
     IRenderSystem*  pRenderSystem;
+    INetworkSystem* pNetworkSystem;
 };
 
 extern GlobalEnviroment* gEnv;

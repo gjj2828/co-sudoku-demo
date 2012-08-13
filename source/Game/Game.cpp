@@ -1,5 +1,7 @@
 #include "StdAfx.h"
 #include "Game.h"
+#include <IPuzzleSystem.h>
+#include <IRenderSystem.h>
 
 #define CLASS_NAME "Sudoku"
 #define WINDOW_NAME "Sudoku"
@@ -49,6 +51,8 @@ void CGame::Run()
         }
 
         if(bQuit) break;
+
+        m_env.pNetworkSystem->Update();
     }
 }
 
@@ -119,6 +123,17 @@ int CGame::LoadDll()
     if(!m_env.pRenderSystem)    ERROR_RTN0("CreateRenderSystem failed!");
     if(!m_env.pRenderSystem->Init(m_hWnd, m_pGridManager))    return 0;
     if(!m_pGridManager) ERROR_RTN0("Can\'t, create GridManager!");
+
+    // EMODULE_RENDER
+    hModule = LoadLibrary("Network.dll");
+    if(!hModule) ERROR_RTN0("Can\'t load Network.dll!");
+    m_hModules[EMODULE_NETWORK] = hModule;
+    typedef INetworkSystem* (*CreateNetworkSystemFunc)();
+    CreateNetworkSystemFunc fCreateNetworkSystem = (CreateNetworkSystemFunc)GetProcAddress(hModule, "CreateNetworkSystem");
+    if(!fCreateNetworkSystem) ERROR_RTN0("Can\'t get CreateNetworkSystem function!");
+    m_env.pNetworkSystem = fCreateNetworkSystem();
+    if(!m_env.pNetworkSystem) ERROR_RTN0("CreateNetworkSystem failed!");
+    if(!m_env.pNetworkSystem->Init()) return 0;
 
     return 1;
 }

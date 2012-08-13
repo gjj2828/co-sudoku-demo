@@ -2,9 +2,9 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="9.00"
-	Name="CommonFile"
-	ProjectGUID="{748ED48A-CA2A-4D47-B345-3A8A7B69417E}"
-	RootNamespace="CommonFile"
+	Name="Network"
+	ProjectGUID="{E4BA7E09-CB2E-4544-B99A-B28F1799E118}"
+	RootNamespace="Network"
 	TargetFrameworkVersion="196613"
 	>
 	<Platforms>
@@ -17,8 +17,8 @@
 	<Configurations>
 		<Configuration
 			Name="Debug|Win32"
-			ConfigurationType="10"
-			InheritedPropertySheets="..\Common.vsprops"
+			ConfigurationType="2"
+			InheritedPropertySheets="..\Common.vsprops;..\Dll.vsprops"
 			CharacterSet="2"
 			>
 			<Tool
@@ -28,7 +28,55 @@
 				Name="VCCustomBuildTool"
 			/>
 			<Tool
+				Name="VCXMLDataGeneratorTool"
+			/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"
+			/>
+			<Tool
 				Name="VCMIDLTool"
+			/>
+			<Tool
+				Name="VCCLCompilerTool"
+				Optimization="0"
+				MinimalRebuild="true"
+				BasicRuntimeChecks="3"
+				RuntimeLibrary="3"
+				WarningLevel="3"
+				DebugInformationFormat="4"
+			/>
+			<Tool
+				Name="VCManagedResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCPreLinkEventTool"
+			/>
+			<Tool
+				Name="VCLinkerTool"
+				AdditionalDependencies="WS2_32.LIB"
+				GenerateDebugInformation="true"
+				TargetMachine="1"
+			/>
+			<Tool
+				Name="VCALinkTool"
+			/>
+			<Tool
+				Name="VCManifestTool"
+			/>
+			<Tool
+				Name="VCXDCMakeTool"
+			/>
+			<Tool
+				Name="VCBscMakeTool"
+			/>
+			<Tool
+				Name="VCFxCopTool"
+			/>
+			<Tool
+				Name="VCAppVerifierTool"
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
@@ -36,8 +84,10 @@
 		</Configuration>
 		<Configuration
 			Name="Release|Win32"
+			OutputDirectory="$(SolutionDir)$(ConfigurationName)"
+			IntermediateDirectory="$(ConfigurationName)"
 			ConfigurationType="1"
-			InheritedPropertySheets="..\Common.vsprops"
+			InheritedPropertySheets="..\Common.vsprops;..\Dll.vsprops"
 			CharacterSet="2"
 			WholeProgramOptimization="1"
 			>
@@ -112,6 +162,26 @@
 			Filter="cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx"
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
+			<File
+				RelativePath=".\main.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\NetworkSystem.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\StdAfx.cpp"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="1"
+					/>
+				</FileConfiguration>
+			</File>
 		</Filter>
 		<Filter
 			Name="Í·ÎÄ¼þ"
@@ -119,47 +189,11 @@
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
 			<File
-				RelativePath=".\CommonHeader.h"
+				RelativePath=".\NetworkSystem.h"
 				>
 			</File>
 			<File
-				RelativePath=".\CommonModule.h"
-				>
-			</File>
-			<File
-				RelativePath=".\CompressionHeader.h"
-				>
-			</File>
-			<File
-				RelativePath=".\ComPuzExpr.h"
-				>
-			</File>
-			<File
-				RelativePath=".\GlobalEnviroment.h"
-				>
-			</File>
-			<File
-				RelativePath=".\ICompression.h"
-				>
-			</File>
-			<File
-				RelativePath=".\IGame.h"
-				>
-			</File>
-			<File
-				RelativePath=".\IGridManager.h"
-				>
-			</File>
-			<File
-				RelativePath=".\INetworkSystem.h"
-				>
-			</File>
-			<File
-				RelativePath=".\IPuzzleSystem.h"
-				>
-			</File>
-			<File
-				RelativePath=".\IRenderSystem.h"
+				RelativePath=".\StdAfx.h"
 				>
 			</File>
 		</Filter>

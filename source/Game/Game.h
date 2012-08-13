@@ -2,11 +2,10 @@
 #define __GAME_H__
 
 #include <IGame.h>
-#include <IPuzzleSystem.h>
-#include <IRenderSystem.h>
 #include <IGridManager.h>
+#include <INetworkSystem.h>
 
-class CGame: public IGame
+class CGame: public IGame, public INetworkListener
 {
 public:
     CGame();
@@ -23,6 +22,7 @@ private:
         EMODULE_MIN,
         EMODULE_PUZZLE  = EMODULE_MIN,
         EMODULE_RENDER,
+        EMODULE_NETWORK,
         EMODULE_MAX,
     };
 
