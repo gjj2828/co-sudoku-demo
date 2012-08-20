@@ -17,6 +17,8 @@
 #define DLL_EXPORT  __declspec(dllexport)
 #define DLL_IMPORT  __declspec(dllimport)
 
+typedef __int64 int64;
+
 enum
 {
     ECOMPRESSION_MIN,

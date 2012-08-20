@@ -21,12 +21,14 @@ void CNetworkSystem::Release()
     this->~CNetworkSystem();
 }
 
-void CNetworkSystem::Update()
+void CNetworkSystem::Update(float time)
 {
     if(m_eState == ESTATE_STOPPED) return;
 }
 
-void CNetworkSystem::Start(EMode mode)
+void CNetworkSystem::Start(EMode mode, float time)
 {
     if(m_eState != ESTATE_STOPPED) return;
+
+    m_fTimeBase = time;
 }

@@ -4,6 +4,7 @@
 #include <IGame.h>
 #include <IGridManager.h>
 #include <INetworkSystem.h>
+#include "ITimer.h"
 
 class CGame: public IGame, public INetworkListener
 {
@@ -26,6 +27,11 @@ private:
         EMODULE_MAX,
     };
 
+    enum
+    {
+        FPS = 60,
+    };
+
     HINSTANCE           m_hInstance;
     HWND                m_hWnd;
     HBRUSH              m_hBkBrush;
@@ -34,8 +40,15 @@ private:
     IGridManager*       m_pGridManager;
     int                 m_iSelectedGrid;
 
-    int LoadDll();
-    int InitWindow();
+    ITimer*             m_pTimer;
+    float               m_fTime;
+
+    int     LoadDll();
+    int     InitWindow();
+    int     InitTimer();
+    void    UpdateTimer();
+
+    static const float m_cSPF;
 
     static LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam);
 };

@@ -2,9 +2,12 @@
 #include "Game.h"
 #include <IPuzzleSystem.h>
 #include <IRenderSystem.h>
+#include "Timer.h"
 
 #define CLASS_NAME "Sudoku"
 #define WINDOW_NAME "Sudoku"
+
+const float CGame::m_cSPF = 1.0f / (float)FPS;
 
 CGame::CGame()
 : m_hInstance(NULL)
@@ -12,6 +15,8 @@ CGame::CGame()
 , m_hBkBrush(NULL)
 , m_pGridManager(NULL)
 , m_iSelectedGrid(IGridManager::INVALID_GRID)
+, m_pTimer(NULL)
+, m_fTime(0)
 {
     ZeroMemory(m_hModules, sizeof(HMODULE) * EMODULE_MAX);
     ZeroMemory(&m_env, sizeof(GlobalEnviroment));
@@ -22,8 +27,9 @@ int CGame::Init(HINSTANCE hInstance)
 {
     m_hInstance = hInstance;
 
-    if(!InitWindow()) return 0;
-    if(!LoadDll()) return 0;
+    if(!InitWindow())   return 0;
+    if(!LoadDll())      return 0;
+    if(!InitTimer())    return 0;
 
     ShowWindow(m_hWnd, SW_NORMAL);
     UpdateWindow(m_hWnd);
@@ -52,7 +58,8 @@ void CGame::Run()
 
         if(bQuit) break;
 
-        m_env.pNetworkSystem->Update();
+        UpdateTimer();
+        m_env.pNetworkSystem->Update(m_fTime);
     }
 }
 
@@ -62,6 +69,7 @@ void    CGame::Release()
     SAFE_RELEASE(m_env.pPuzzleSystem);
     SAFE_RELEASE(m_env.pRenderSystem);
     SAFE_DELETE(m_pGridManager);
+    SAFE_DELETE(m_pTimer);
     for(int i = EMODULE_MIN; i < EMODULE_MAX; i++)
     {
         SAFE_FREELIBRARY(m_hModules[i]);
@@ -161,6 +169,26 @@ int CGame::InitWindow()
     if(!m_hWnd) return 0;
 
     return 1;
+}
+
+int CGame::InitTimer()
+{
+    m_pTimer = new CPrecisionTimer;
+    if(m_pTimer->Init()) return 1;
+    SAFE_DELETE(m_pTimer);
+    m_pTimer = new CNormalTimer;
+    if(!m_pTimer->Init()) ERROR_RTN0("Can\'t init timer!");
+    float time = m_pTimer->GetTime();
+
+    return 1;
+}
+
+void CGame::UpdateTimer()
+{
+    float dt = m_pTimer->GetTime() - m_fTime;
+    if(dt < m_cSPF) Sleep((DWORD)((m_cSPF - dt) * 1000.0f));
+
+    m_fTime = m_pTimer->GetTime();
 }
 
 LRESULT CGame::WndProc(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam)
