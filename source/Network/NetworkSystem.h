@@ -25,8 +25,22 @@ private:
         ESTATE_MAX,
     };
 
+    enum
+    {
+        MAIN_PORT = 7778,
+        BROADCAST_PORT = 7779,
+    };
+
     EState m_eState;
     float m_fTimeBase;
+
+    sockaddr_in m_BroadCastBindAddr;
+    sockaddr_in m_BroadCastAddr;
+    sockaddr_in m_BindAddr;
+
+    SOCKET m_soBroadCast; 
+
+    static const char* m_cBroadCastAddr;
 };
 
 #endif // __NETWORKSYSTEM_H__
