@@ -19,11 +19,19 @@ int APIENTRY    WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCm
         FreeLibrary(hGameDll);
         ERROR_EXIT("CreateGame failed!");
     }
+#if USE_CONSOLE
+    AllocConsole();
+#endif // USE_CONSOLE
+    freopen("conout$", "w", stdout);
+    freopen("conin$", "r", stdin);
     if(pGame->Init(hInstance))
     {
         pGame->Run();
     }
     SAFE_RELEASE(pGame);
     FreeLibrary(hGameDll);
+#if USE_CONSOLE
+    FreeConsole();
+#endif // USE_CONSOLE
     return 0;
 }

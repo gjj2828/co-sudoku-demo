@@ -1,6 +1,7 @@
 #ifndef __COMMONHEADER_H__
 #define __COMMONHEADER_H__
 
+#include <WinSock2.h>
 #include <windows.h>
 #include <WinDef.h>
 #include <stdio.h>
@@ -16,6 +17,8 @@
 
 #define DLL_EXPORT  __declspec(dllexport)
 #define DLL_IMPORT  __declspec(dllimport)
+
+#define USE_CONSOLE (1)
 
 typedef __int64 int64;
 
@@ -41,6 +44,8 @@ enum
 #define COL_BLACK   RGB(0, 0, 0)
 #define COL_RED     RGB(255, 0, 0)
 #define COL_GREY    RGB(192, 192, 192)
+
+#define GAME_NAME   ("co-sudoku")
 
 #define SAFE_FCLOSE(p)  \
 {                       \
@@ -88,7 +93,13 @@ enum
 {                           \
     if(p) DeleteObject(p);   \
     (p) = NULL;             \
-    }
+}
+
+#define SAFE_CLOSESOCKET(p) \
+{                           \
+    if((p) != INVALID_SOCKET) closesocket(p);   \
+    (p) = INVALID_SOCKET;             \
+}
 
 #define ERROR_MSG(context)  MessageBox(NULL, (context), "Error", MB_OK)
 

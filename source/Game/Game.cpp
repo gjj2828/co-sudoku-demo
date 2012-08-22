@@ -4,10 +4,10 @@
 #include <IRenderSystem.h>
 #include "Timer.h"
 
-#define CLASS_NAME "Sudoku"
-#define WINDOW_NAME "Sudoku"
+const char* CGame::m_cClassName = GAME_NAME;
+const char* CGame::m_cWindowName = GAME_NAME;
 
-const float CGame::m_cSPF = 1.0f / (float)FPS;
+const float CGame::m_cSPF = 1.0f / (float)CGame::FPS;
 
 CGame::CGame()
 : m_hInstance(NULL)
@@ -17,6 +17,7 @@ CGame::CGame()
 , m_iSelectedGrid(IGridManager::INVALID_GRID)
 , m_pTimer(NULL)
 , m_fTime(0)
+, m_eCoType(ECOTYPE_MIN)
 {
     ZeroMemory(m_hModules, sizeof(HMODULE) * EMODULE_MAX);
     ZeroMemory(&m_env, sizeof(GlobalEnviroment));
@@ -33,6 +34,14 @@ int CGame::Init(HINSTANCE hInstance)
 
     ShowWindow(m_hWnd, SW_NORMAL);
     UpdateWindow(m_hWnd);
+
+    m_eCoType = ECOTYPE_AUTOPAIR;
+    if(m_env.pNetworkSystem->Start(INetworkSystem::EMODE_AUTOPAIR, m_fTime) != NO_ERROR)
+    {
+        m_env.pNetworkSystem->Stop();
+        m_eCoType = ECOTYPE_SINGLE;
+        printf("Network start failed!\n");
+    }
 
     return 1;
 }
@@ -59,7 +68,15 @@ void CGame::Run()
         if(bQuit) break;
 
         UpdateTimer();
-        m_env.pNetworkSystem->Update(m_fTime);
+        if(m_eCoType == ECOTYPE_AUTOPAIR)
+        {
+            if(m_env.pNetworkSystem->Update(m_fTime) != NO_ERROR)
+            {
+                m_env.pNetworkSystem->Stop();
+                m_eCoType = ECOTYPE_SINGLE;
+                printf("Network update failed!\n");
+            }
+        }
     }
 }
 
@@ -74,7 +91,7 @@ void    CGame::Release()
     {
         SAFE_FREELIBRARY(m_hModules[i]);
     }
-    UnregisterClass(CLASS_NAME, m_hInstance);
+    UnregisterClass(m_cClassName, m_hInstance);
     m_env.pGame = NULL;
     this->~CGame();
 }
@@ -159,11 +176,11 @@ int CGame::InitWindow()
     wc.hCursor          = NULL;
     wc.hbrBackground    = m_hBkBrush;
     wc.lpszMenuName     = MAKEINTRESOURCE(IDC_MENU);
-    wc.lpszClassName    = CLASS_NAME;
+    wc.lpszClassName    = m_cClassName;
 
     if(!RegisterClass(&wc)) return 0;
 
-    m_hWnd = CreateWindow( CLASS_NAME, WINDOW_NAME, WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX
+    m_hWnd = CreateWindow( m_cClassName, m_cWindowName, WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX
                          , CW_USEDEFAULT, CW_USEDEFAULT, 480, 512, NULL, LoadMenu(GetModuleHandle("Game"),  MAKEINTRESOURCE(IDC_MENU)), m_hInstance, NULL );
 
     if(!m_hWnd) return 0;

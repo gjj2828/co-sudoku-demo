@@ -27,6 +27,14 @@ private:
         EMODULE_MAX,
     };
 
+    enum ECoType
+    {
+        ECOTYPE_MIN,
+        ECOTYPE_SINGLE = ECOTYPE_MIN,
+        ECOTYPE_AUTOPAIR,
+        ECOTYPE_MAX,
+    };
+
     enum
     {
         FPS = 60,
@@ -43,12 +51,16 @@ private:
     ITimer*             m_pTimer;
     float               m_fTime;
 
+    ECoType             m_eCoType;
+
     int     LoadDll();
     int     InitWindow();
     int     InitTimer();
     void    UpdateTimer();
 
     static const float m_cSPF;
+    static const char* m_cClassName;
+    static const char* m_cWindowName;
 
     static LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam);
 };
