@@ -2,6 +2,7 @@
 #define __NETWORKSYSTEM_H__
 
 #include <INetworkSystem.h>
+#include <MSWSock.h>
 
 class CNetworkSystem: public INetworkSystem
 {
@@ -57,30 +58,46 @@ private:
         UINT    iDummy      : 25;
     };
 
-    EState          m_eState;
-    int             m_iSendCount;
-    bool            m_bbcSending;
-    float           m_fbcSendTime;
+    typedef std::vector<BroadCastData> BCDVector;
 
-    sockaddr_in     m_bcBindAddr;
-    sockaddr_in     m_bcSendAddr;
-    sockaddr_in     m_bcRecvAddr;
-    sockaddr_in     m_BindAddr;
+    EState                      m_eState;
+    int                         m_iSendCount;
+    bool                        m_bbcSending;
+    float                       m_fbcSendTime;
 
-    int             m_ibcRecAddrSize;
+    sockaddr_in                 m_bcBindAddr;
+    sockaddr_in                 m_bcSendAddr;
+    sockaddr_in                 m_bcRecvAddr;
+    sockaddr_in                 m_BindAddr;
 
-    SOCKET          m_soBroadCast;
+    int                         m_ibcRecAddrSize;
 
-    HANDLE          m_hEvents[EEVENT_MAX];
-    WSAOVERLAPPED   m_Overlapped[EEVENT_MAX];
+    SOCKET                      m_soBroadCast;
+    SOCKET                      m_soListener;
+    SOCKET                      m_soCoClient[COCLIENT_MAX];
 
-    BroadCastData   m_bcSendBuf;
-    BroadCastData   m_bcRecvBuf;
+    LPFN_ACCEPTEX               m_lpfnAcceptEx;
+    LPFN_GETACCEPTEXSOCKADDRS   m_lpfnGetAcceptExSockaddrs;
+
+    int                         m_iCoClientMax;
+    int                         m_iCoClientNum;
+
+    HANDLE                      m_hEvents[EEVENT_MAX];
+    WSAOVERLAPPED               m_Overlapped[EEVENT_MAX];
+
+    BroadCastData               m_bcSendBuf;
+    BroadCastData               m_bcRecvBuf;
+    char                        m_AcceptBuf[(sizeof(SOCKADDR_IN) + 16) * 2];
+
+    BCDVector                   m_vectorBCD;
 
     static const char* m_cBroadCastSendAddr;
+    static const float m_cBroadCastSendInterval;
 
-    int BroadCastSend(float time);
-    int BroadCastRecv();
+    int     BroadCastSend(float time);
+    int     BroadCastRecv();
+    int     PostAccept();
+    void    CheckBroadCastRecv(float time);
 };
 
 #endif // __NETWORKSYSTEM_H__
