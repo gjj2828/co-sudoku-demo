@@ -1,42 +1,68 @@
 #include "StdAfx.h"
 #include "NetworkSystem.h"
 
-#define ERROR_CHECK1(rc)                                \
-{                                                       \
-    if((rc) == SOCKET_ERROR) return WSAGetLastError();  \
+#define ERROR_CHECK1(rc)            \
+{                                   \
+    if((rc) == SOCKET_ERROR)        \
+    {                               \
+        (rc) = WSAGetLastError();   \
+        PRINT("Error: %d\n", (rc)); \
+        return WSAGetLastError();   \
+    }                               \
 }
 
-#define ERROR_CHECK2(rc)                        \
-{                                               \
-    if((rc) == SOCKET_ERROR)                    \
-    {                                           \
-        (rc) = WSAGetLastError();               \
-        if((rc) != WSA_IO_PENDING) return (rc); \
-    }                                           \
-}
-
-#define ERROR_CHECK3(rc)                \
+#define ERROR_CHECK2(rc)                \
 {                                       \
-    if((rc) != NO_ERROR) return (rc);   \
+    if((rc) == SOCKET_ERROR)            \
+    {                                   \
+        (rc) = WSAGetLastError();       \
+        if((rc) != WSA_IO_PENDING)      \
+        {                               \
+            PRINT("Error: %d\n", (rc)); \
+            return (rc);                \
+        }                               \
+    }                                   \
 }
 
-#define ERROR_CHECK4(rc)                    \
-{                                           \
-    if((rc) == WAIT_FAILED) return (rc);    \
+#define ERROR_CHECK3(rc)            \
+{                                   \
+    if((rc) != NO_ERROR)            \
+    {                               \
+        PRINT("Error: %d\n", (rc)); \
+        return (rc);                \
+    }                               \
 }
 
-#define ERROR_CHECK5(rc)                        \
-{                                               \
-    if((rc) == FALSE) return WSAGetLastError(); \
+#define ERROR_CHECK4(rc)            \
+{                                   \
+    if((rc) == WAIT_FAILED)         \
+    {                               \
+        PRINT("Error: %d\n", (rc)); \
+        return (rc);                \
+    }                               \
 }
 
-#define ERROR_CHECK6(rc)                        \
-{                                               \
-    if((rc) == FALSE)                           \
-    {                                           \
-        (rc) = WSAGetLastError();               \
-        if((rc) != WSA_IO_PENDING) return (rc); \
-    }                                           \
+#define ERROR_CHECK5(rc)            \
+{                                   \
+    if((rc) == FALSE)               \
+    {                               \
+        (rc) = WSAGetLastError();   \
+        PRINT("Error: %d\n", (rc)); \
+        return (rc);                \
+    }                               \
+}
+
+#define ERROR_CHECK6(rc)                \
+{                                       \
+    if((rc) == FALSE)                   \
+    {                                   \
+        (rc) = WSAGetLastError();       \
+        if((rc) != WSA_IO_PENDING)      \
+        {                               \
+            PRINT("Error: %d\n", (rc)); \
+            return (rc);                \
+        }                               \
+    }                                   \
 }
 
 const char* CNetworkSystem::m_cBroadCastSendAddr = "192.168.255.255";
@@ -115,6 +141,7 @@ int CNetworkSystem::Update(float time)
             WSAResetEvent(m_hEvents[EEVENT_BROADCAST_SEND]);
             rc = WSAGetOverlappedResult(m_soBroadCast, &m_Overlapped[EEVENT_BROADCAST_SEND], &dwBytes, false, &dwFlags);
             ERROR_CHECK5(rc);
+            PRINT("BroadCastSend success!");
             m_bbcSending = false;
         }
 
@@ -125,7 +152,8 @@ int CNetworkSystem::Update(float time)
             WSAResetEvent(m_hEvents[EEVENT_BROADCAST_RECV]);
             rc = WSAGetOverlappedResult(m_soBroadCast, &m_Overlapped[EEVENT_BROADCAST_RECV], &dwBytes, false, &dwFlags);
             ERROR_CHECK5(rc);
-            if(dwBytes == sizeof(BroadCastData)) m_vectorBCD.push_back(m_bcRecvBuf);
+            if(dwBytes == sizeof(BroadCastData) && strcmp(m_bcSendBuf.sGameName, GAME_NAME) == 0) m_vectorBCD.push_back(m_bcRecvBuf);
+            PRINT("BroadCastRecv success!");
             rc = BroadCastRecv();
             ERROR_CHECK3(rc);
         }
@@ -138,6 +166,8 @@ int CNetworkSystem::Update(float time)
 
 int CNetworkSystem::Start(EMode mode, float time)
 {
+    PRINT("Network start!\n");
+
     if(m_eState != ESTATE_STOPPED) return -1;
 
     int rc;
@@ -181,6 +211,8 @@ int CNetworkSystem::Start(EMode mode, float time)
                  , NULL
                  , NULL);
     ERROR_CHECK1(rc);
+
+    PRINT("listening...\n");
 
     rc = listen(m_soListener, 5);
     ERROR_CHECK1(rc);
@@ -226,6 +258,8 @@ void CNetworkSystem::Stop()
 
 int CNetworkSystem::BroadCastSend(float time)
 {
+    PRINT("BroadCastSend\n");
+
     WSABUF  buf;
     int     rc;
     DWORD   dwBytes;
@@ -249,6 +283,8 @@ int CNetworkSystem::BroadCastSend(float time)
 
 int CNetworkSystem::BroadCastRecv()
 {
+    PRINT("BroadCastRecv\n");
+
     WSABUF  buf;
     int     rc;
     DWORD   dwBytes, dwFlags;
@@ -264,6 +300,8 @@ int CNetworkSystem::BroadCastRecv()
 
 int CNetworkSystem::PostAccept()
 {
+    PRINT("PostAccept\n");
+
     int rc;
     DWORD dwBytes;
     rc = m_lpfnAcceptEx(m_soListener, m_soCoClient[m_iCoClientNum], m_AcceptBuf, 0, sizeof(SOCKADDR_IN) + 16, sizeof(SOCKADDR_IN) + 16, &dwBytes, &m_Overlapped[EEVENT_ACCEPT]);

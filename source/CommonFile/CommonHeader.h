@@ -19,6 +19,11 @@
 #define DLL_IMPORT  __declspec(dllimport)
 
 #define USE_CONSOLE (1)
+#if USE_CONSOLE
+#define PRINT printf
+#else // USE_CONSOLE
+#define PRINT (0)
+#endif // USE_CONSOLE
 
 typedef __int64 int64;
 

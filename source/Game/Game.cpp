@@ -32,15 +32,15 @@ int CGame::Init(HINSTANCE hInstance)
     if(!LoadDll())      return 0;
     if(!InitTimer())    return 0;
 
-    ShowWindow(m_hWnd, SW_NORMAL);
-    UpdateWindow(m_hWnd);
+    //ShowWindow(m_hWnd, SW_NORMAL);
+    //UpdateWindow(m_hWnd);
 
     m_eCoType = ECOTYPE_AUTOPAIR;
     if(m_env.pNetworkSystem->Start(INetworkSystem::EMODE_AUTOPAIR, m_fTime) != NO_ERROR)
     {
+        PRINT("Network start failed!\n");
         m_env.pNetworkSystem->Stop();
         m_eCoType = ECOTYPE_SINGLE;
-        printf("Network start failed!\n");
     }
 
     return 1;
@@ -74,7 +74,7 @@ void CGame::Run()
             {
                 m_env.pNetworkSystem->Stop();
                 m_eCoType = ECOTYPE_SINGLE;
-                printf("Network update failed!\n");
+                PRINT("Network update failed!\n");
             }
         }
     }
