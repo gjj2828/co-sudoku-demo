@@ -4,6 +4,7 @@
 #include <WinSock2.h>
 #include <windows.h>
 #include <WinDef.h>
+#include <assert.h>
 #include <stdio.h>
 #include <io.h>
 #include <sys/stat.h>
