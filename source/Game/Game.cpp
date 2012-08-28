@@ -36,10 +36,8 @@ int CGame::Init(HINSTANCE hInstance)
     //UpdateWindow(m_hWnd);
 
     m_eCoType = ECOTYPE_AUTOPAIR;
-    if(m_env.pNetworkSystem->Start(INetworkSystem::EMODE_AUTOPAIR, m_fTime) != NO_ERROR)
+    if(!m_env.pNetworkSystem->Start(INetworkSystem::EMODE_AUTOPAIR, m_fTime))
     {
-        PRINT("Network start failed!\n");
-        m_env.pNetworkSystem->Stop();
         m_eCoType = ECOTYPE_SINGLE;
     }
 
@@ -68,15 +66,7 @@ void CGame::Run()
         if(bQuit) break;
 
         UpdateTimer();
-        if(m_eCoType == ECOTYPE_AUTOPAIR)
-        {
-            if(m_env.pNetworkSystem->Update(m_fTime) != NO_ERROR)
-            {
-                m_env.pNetworkSystem->Stop();
-                m_eCoType = ECOTYPE_SINGLE;
-                PRINT("Network update failed!\n");
-            }
-        }
+        m_env.pNetworkSystem->Update(m_fTime)
     }
 }
 

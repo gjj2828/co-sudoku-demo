@@ -20,7 +20,7 @@ public:
 
     virtual int     Init()                                          = 0;
     virtual void    Release()                                       = 0;
-    virtual int     Update(float time)                              = 0;
+    virtual void    Update(float time)                              = 0;
     virtual int     Start(EMode mode, float time)                   = 0;
     virtual void    Stop()                                          = 0;
     virtual void    RegisterListener(INetworkListener* listener)    = 0;

@@ -1,6 +1,15 @@
 #include "StdAfx.h"
 #include "NetworkSystem.h"
 
+#define WAITFAILEDRTN(rc)   \
+{                           \
+    if((rc) == WAIT_FAILED) \
+    {                       \
+        Stop();             \
+        return;             \
+    }                       \
+}
+
 const char* CNetworkSystem::m_cBroadCastSendAddr = "192.168.255.255";
 const float CNetworkSystem::m_cBroadCastSendInterval = 1.0f;
 
@@ -8,11 +17,13 @@ CNetworkSystem::CNetworkSystem()
 : m_eState(ESTATE_STOPPED)
 , m_iSendCount(0)
 , m_bbcSending(false)
+, m_bbcRecving(false)
 , m_fbcSendTime(0.0f)
 , m_bHost(false)
 , m_ibcRecAddrSize(0)
 , m_soBroadCast(INVALID_SOCKET)
 , m_soListener(INVALID_SOCKET)
+, m_soClient(INVALID_SOCKET)
 , m_iCoClientMax(COCLIENT_MAX)
 , m_iCoClientNum(0)
 , m_bRecvServer(false)
@@ -60,9 +71,9 @@ void CNetworkSystem::Release()
     this->~CNetworkSystem();
 }
 
-int CNetworkSystem::Update(float time)
+void CNetworkSystem::Update(float time)
 {
-    if(m_eState == ESTATE_STOPPED) return -1;
+    if(m_eState == ESTATE_STOPPED) return;
 
     int rc;
     DWORD dwBytes, dwFlags;
@@ -71,84 +82,88 @@ int CNetworkSystem::Update(float time)
     ToDeleteVector vectorToDelete;
 
     rc = WaitForMultipleObjects(EEVENT_MAX, m_hEvents, false, 0);
-    if(rc == WAIT_FAILED) return rc;
+    WAITFAILEDRTN(rc);
 
     if(rc != WAIT_TIMEOUT)
     {
-        rc = WaitForSingleObject(m_hEvents[EEVENT_ACCEPT], 0);
-        if(rc == WAIT_FAILED) return rc;
-        if(rc == WAIT_OBJECT_0)
-        {
-            PRINT("OnAccept!");
-            WSAResetEvent(m_hEvents[EEVENT_ACCEPT]);
-            rc = WSAGetOverlappedResult(m_soBroadCast, &m_Overlapped[EEVENT_ACCEPT], &dwBytes, false, &dwFlags);
-            if(rc == FALSE) return WSAGetLastError();
-            SOCKADDR*   LocalSockaddr;
-            SOCKADDR*   RemoteSockaddr;
-            int         LocalSockaddrLen;
-            int         RemoteSockaddrLen;
-            m_lpfnGetAcceptExSockaddrs( m_AcceptBuf, sizeof(m_AcceptBuf) - (sizeof(SOCKADDR_IN) + 16) * 2, sizeof(SOCKADDR_IN) + 16, sizeof(SOCKADDR_IN) + 16
-                                      , (SOCKADDR **)&LocalSockaddr, &LocalSockaddrLen, (SOCKADDR **)&RemoteSockaddr, &RemoteSockaddrLen );
-            if(m_eState == ESTATE_WAITING || (m_eState == ESTATE_PAIRED && m_bHost == true))
-            {
-                if(strcmp(m_AcceptBuf, GAME_NAME) == 0)
-                {
-                    rc = PostRecv(m_iCoClientNum);
-                    if(rc == NO_ERROR)
-                    {
-                        if(m_eState == ESTATE_WAITING)
-                        {
-                            m_eState = ESTATE_PAIRED;
-                            m_bHost = true;
-                        }
-                        m_iCoClientNum++;
-                        if(m_iCoClientNum < m_iCoClientMax) PostAccept();
-                    }
-                    else
-                    {
-                        SAFE_CLOSESOCKET(m_CoClientData[m_iCoClientNum].s);
-                        PostAccept();
-                    }
-                }
-                else
-                {
-                    SAFE_CLOSESOCKET(m_CoClientData[m_iCoClientNum].s);
-                    PostAccept();
-                }
-            }
-            else
-            {
-                SAFE_CLOSESOCKET(m_CoClientData[m_iCoClientNum].s);
-            }
-        }
-
         rc = WaitForSingleObject(m_hEvents[EEVENT_BROADCAST_SEND], 0);
-        if(rc == WAIT_FAILED) return rc;
+        WAITFAILEDRTN(rc);
         if(rc == WAIT_OBJECT_0)
         {
-            PRINT("OnBroadCastSend!");
             WSAResetEvent(m_hEvents[EEVENT_BROADCAST_SEND]);
             rc = WSAGetOverlappedResult(m_soBroadCast, &m_Overlapped[EEVENT_BROADCAST_SEND], &dwBytes, false, &dwFlags);
-            m_bbcSending = false;
+            if(!OnBroadCastSend(rc)) return;
         }
 
         rc = WaitForSingleObject(m_hEvents[EEVENT_BROADCAST_RECV], 0);
-        if(rc == WAIT_FAILED) return rc;
+        WAITFAILEDRTN(rc);
         if(rc == WAIT_OBJECT_0)
         {
-            PRINT("OnBroadCastRecv %s!", inet_ntoa(m_bcRecvAddr.sin_addr));
             WSAResetEvent(m_hEvents[EEVENT_BROADCAST_RECV]);
             rc = WSAGetOverlappedResult(m_soBroadCast, &m_Overlapped[EEVENT_BROADCAST_RECV], &dwBytes, false, &dwFlags);
-            if(rc == TRUE)
+            if(!OnBroadCastRecv(rc, dwBytes)) return;
+        }
+
+        rc = WaitForSingleObject(m_hEvents[EEVENT_ACCEPT], 0);
+        WAITFAILEDRTN(rc);
+        if(rc == WAIT_OBJECT_0)
+        {
+            WSAResetEvent(m_hEvents[EEVENT_ACCEPT]);
+            rc = WSAGetOverlappedResult(m_soBroadCast, &m_Overlapped[EEVENT_ACCEPT], &dwBytes, false, &dwFlags);
+            if(!OnAccept(rc)) return;
+        }
+
+        rc = WaitForSingleObject(m_hEvents[EEVENT_CONNECT], 0);
+        WAITFAILEDRTN(rc);
+        if(rc == WAIT_OBJECT_0)
+        {
+            WSAResetEvent(m_hEvents[EEVENT_CONNECT]);
+            rc = WSAGetOverlappedResult(m_soBroadCast, &m_Overlapped[EEVENT_BROADCAST_SEND], &dwBytes, false, &dwFlags);
+            if(!OnConnect(rc)) return;
+        }
+
+        rc = WaitForSingleObject(m_hEvents[EEVENT_CLIENTSEND], 0);
+        WAITFAILEDRTN(rc);
+        if(rc == WAIT_OBJECT_0)
+        {
+            WSAResetEvent(m_hEvents[EEVENT_CLIENTSEND]);
+            rc = WSAGetOverlappedResult(m_soBroadCast, &m_Overlapped[EEVENT_CLIENTSEND], &dwBytes, false, &dwFlags);
+            if(!OnClientSend(rc)) return;
+        }
+
+        rc = WaitForSingleObject(m_hEvents[EEVENT_CLIENTRECV], 0);
+        WAITFAILEDRTN(rc);
+        if(rc == WAIT_OBJECT_0)
+        {
+            WSAResetEvent(m_hEvents[EEVENT_CLIENTRECV]);
+            rc = WSAGetOverlappedResult(m_soBroadCast, &m_Overlapped[EEVENT_CLIENTRECV], &dwBytes, false, &dwFlags);
+            if(!OnClientRecv(rc, dwBytes)) return;
+        }
+
+        for(int i = 0; i < COCLIENT_MAX; i++)
+        {
+            rc = WaitForSingleObject(m_hEvents[EEVENT_HOSTSEND_MIN + i], 0);
+            WAITFAILEDRTN(rc);
+            if(rc == WAIT_OBJECT_0)
             {
-                if(dwBytes == sizeof(BroadCastData) && strcmp(m_bcSendBuf.sGameName, GAME_NAME) == 0) OnBroadCastRecv();
+                WSAResetEvent(m_hEvents[EEVENT_HOSTSEND_MIN + i]);
+                rc = WSAGetOverlappedResult(m_soBroadCast, &m_Overlapped[EEVENT_HOSTSEND_MIN + i], &dwBytes, false, &dwFlags);
+                if(!OnHostSend(rc, i)) return;
             }
-            rc = PostBroadCastRecv();
-            if(rc != NO_ERROR) return rc;
+
+            rc = WaitForSingleObject(m_hEvents[EEVENT_HOSTRECV_MIN + i], 0);
+            WAITFAILEDRTN(rc);
+            if(rc == WAIT_OBJECT_0)
+            {
+                WSAResetEvent(m_hEvents[EEVENT_HOSTRECV_MIN + i]);
+                rc = WSAGetOverlappedResult(m_soBroadCast, &m_Overlapped[EEVENT_HOSTRECV_MIN + i], &dwBytes, false, &dwFlags);
+                if(!OnHostRecv(rc, dwBytes, i)) return;
+            }
         }
     }
 
-    CheckServer(time);
+    rc = CheckServer(time);
+    if(rc != NO_ERROR) return rc;
 
     return NO_ERROR;
 }
@@ -156,7 +171,26 @@ int CNetworkSystem::Update(float time)
 int CNetworkSystem::Start(EMode mode, float time)
 {
     PRINT("Network start!\n");
+    if(StartInternal(mode, time) == NO_ERROR) return 1;
+    Stop();
+    return 0;
+}
 
+void CNetworkSystem::Stop()
+{
+    m_eState = ESTATE_STOPPED;
+
+    SAFE_CLOSESOCKET(m_soBroadCast);
+    SAFE_CLOSESOCKET(m_soListener);
+    SAFE_CLOSESOCKET(m_soClient);
+    for(int i = 0; i < COCLIENT_MAX; i++)
+    {
+        SAFE_CLOSESOCKET(m_CoClientData[i].s);
+    }
+}
+
+int CNetworkSystem::StartInternal(EMode mode, float time)
+{
     if(m_eState != ESTATE_STOPPED) return -1;
 
     int rc;
@@ -180,25 +214,25 @@ int CNetworkSystem::Start(EMode mode, float time)
     if(rc == SOCKET_ERROR) return WSAGetLastError();
 
     rc = WSAIoctl( m_soListener
-                 , SIO_GET_EXTENSION_FUNCTION_POINTER
-                 , &guidAcceptEx
-                 , sizeof(guidAcceptEx)
-                 , &m_lpfnAcceptEx
-                 , sizeof(m_lpfnAcceptEx)
-                 , &dwBytes
-                 , NULL
-                 , NULL );
+        , SIO_GET_EXTENSION_FUNCTION_POINTER
+        , &guidAcceptEx
+        , sizeof(guidAcceptEx)
+        , &m_lpfnAcceptEx
+        , sizeof(m_lpfnAcceptEx)
+        , &dwBytes
+        , NULL
+        , NULL );
     if(rc == SOCKET_ERROR) return WSAGetLastError();
 
     rc = WSAIoctl( m_soListener
-                 , SIO_GET_EXTENSION_FUNCTION_POINTER
-                 , &guidGetAcceptExSockaddrs
-                 , sizeof(guidGetAcceptExSockaddrs)
-                 , &m_lpfnGetAcceptExSockaddrs
-                 , sizeof(m_lpfnGetAcceptExSockaddrs)
-                 , &dwBytes
-                 , NULL
-                 , NULL );
+        , SIO_GET_EXTENSION_FUNCTION_POINTER
+        , &guidGetAcceptExSockaddrs
+        , sizeof(guidGetAcceptExSockaddrs)
+        , &m_lpfnGetAcceptExSockaddrs
+        , sizeof(m_lpfnGetAcceptExSockaddrs)
+        , &dwBytes
+        , NULL
+        , NULL );
     if(rc == SOCKET_ERROR) return WSAGetLastError();
 
     PRINT("listening...\n");
@@ -228,21 +262,11 @@ int CNetworkSystem::Start(EMode mode, float time)
     return NO_ERROR;
 }
 
-void CNetworkSystem::Stop()
-{
-    m_eState = ESTATE_STOPPED;
-
-    SAFE_CLOSESOCKET(m_soBroadCast);
-    SAFE_CLOSESOCKET(m_soListener);
-    for(int i = 0; i < COCLIENT_MAX; i++)
-    {
-        SAFE_CLOSESOCKET(m_CoClientData[i].s);
-    }
-}
-
 int CNetworkSystem::PostBroadCastSend(float time)
 {
     PRINT("PostBroadCastSend\n");
+
+    if(m_bbcSending) return NO_ERROR;
 
     WSABUF  buf;
     int     rc;
@@ -272,6 +296,8 @@ int CNetworkSystem::PostBroadCastSend(float time)
 int CNetworkSystem::PostBroadCastRecv()
 {
     PRINT("PostBroadCastRecv\n");
+
+    if(m_bbcRecving) return NO_ERROR;
 
     WSABUF  buf;
     int     rc;
@@ -312,12 +338,80 @@ int CNetworkSystem::PostAccept()
 
 int CNetworkSystem::PostConnect()
 {
+    PRINT("PostConnect\n");
+
+    int             rc;
+    DWORD           dwBytes;
+    SOCKADDR_IN     ServerAddr;
+    LPFN_CONNECTEX  lpfnConnectEx;
+
+    GUID guidConnectEx = WSAID_CONNECTEX;
+
+    m_soClient = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+    if(m_soClient == INVALID_SOCKET) return -1;
+
+    rc = bind(m_soClient, (SOCKADDR*)&m_BindAddr, sizeof(m_BindAddr));
+    if(rc == SOCKET_ERROR) return WSAGetLastError();
+
+    rc = WSAIoctl( m_soClient
+                 , SIO_GET_EXTENSION_FUNCTION_POINTER
+                 , &guidConnectEx
+                 , sizeof(guidConnectEx)
+                 , &lpfnConnectEx
+                 , sizeof(lpfnConnectEx)
+                 , &dwBytes
+                 , NULL
+                 , NULL );
+    if(rc == SOCKET_ERROR) return WSAGetLastError();
+
+    ServerAddr.sin_family   = AF_INET;
+    ServerAddr.sin_addr     = m_Server;
+    ServerAddr.sin_port     = htons(MAIN_PORT);
+
+    rc = lpfnConnectEx(m_soClient, (SOCKADDR*)&ServerAddr, sizeof(ServerAddr), NULL, 0, &dwBytes, &m_Overlapped[EEVENT_CONNECT]);
+    if(rc == FALSE)
+    {
+        rc = WSAGetLastError();
+        if(rc != WSA_IO_PENDING) return rc;
+    }
+
     return NO_ERROR;
 }
 
-int CNetworkSystem::PostRecv(int client)
+int CNetworkSystem::PostClientSend()
 {
-    PRINT("PostRecv\n");
+    return NO_ERROR;
+}
+
+int CNetworkSystem::PostClientRecv()
+{
+    PRINT("PostClientRecv\n");
+
+    WSABUF  buf;
+    int     rc;
+    DWORD   dwBytes, dwFlags;
+
+    buf.buf = (char*)&m_RecvBuf;
+    buf.len = sizeof(m_RecvBuf);
+    dwFlags = 0;
+    rc = WSARecv(m_soClient, &buf, 1, &dwBytes, &dwFlags, &m_Overlapped[EEVENT_CLIENTRECV], NULL);
+    if(rc == SOCKET_ERROR)
+    {
+        rc = rc = WSAGetLastError();
+        if(rc != WSA_IO_PENDING) return rc;
+    }
+
+    return NO_ERROR;
+};
+
+int CNetworkSystem::PostHostSend(int client)
+{
+    return NO_ERROR;
+}
+
+int CNetworkSystem::PostHostRecv(int client)
+{
+    PRINT("PostHostRecv\n");
 
     if(client >= m_iCoClientMax) return -1;
 
@@ -340,9 +434,24 @@ int CNetworkSystem::PostRecv(int client)
     return NO_ERROR;
 };
 
-void CNetworkSystem::OnBroadCastRecv()
+int CNetworkSystem::OnBroadCastSend(int rc)
 {
+    PRINT("OnBroadCastSend!");
+    m_bbcSending = false;
+    return 1
+}
+
+int CNetworkSystem::OnBroadCastRecv(int rc, DWORD bytes)
+{
+    PRINT("OnBroadCastRecv %s!", inet_ntoa(m_bcRecvAddr.sin_addr));
+
+    m_bbcRecving = false;
+
     if(m_eState != ESTATE_WAITING) return;
+
+    
+
+    if(strcmp(m_bcRecvBuf.sGameName, GAME_NAME) != 0) return;
 
     bool bUpdateServer = false;
 
@@ -426,21 +535,117 @@ void CNetworkSystem::OnBroadCastRecv()
         m_ServerData    = m_bcRecvBuf;
         m_bRecvServer   = true;
     }
+
+    return 1;
 }
 
-void CNetworkSystem::CheckServer(float time)
+int CNetworkSystem::OnAccept(int rc)
 {
-    if(m_eState != ESTATE_WAITING)                      return;
-    if(time - m_fbcSendTime < m_cBroadCastSendInterval) return;
-    if(m_bbcSending)                                    return;
-
-    if(m_bRecvServer)
+    PRINT("OnAccept!");
+    if(rc == TRUE)
     {
-        PostConnect();
-        m_eState = ESTATE_CONNECTING;
+        SOCKADDR*   LocalSockaddr;
+        SOCKADDR*   RemoteSockaddr;
+        int         LocalSockaddrLen;
+        int         RemoteSockaddrLen;
+        m_lpfnGetAcceptExSockaddrs( m_AcceptBuf, sizeof(m_AcceptBuf) - (sizeof(SOCKADDR_IN) + 16) * 2, sizeof(SOCKADDR_IN) + 16, sizeof(SOCKADDR_IN) + 16
+            , (SOCKADDR **)&LocalSockaddr, &LocalSockaddrLen, (SOCKADDR **)&RemoteSockaddr, &RemoteSockaddrLen );
+        if(m_eState == ESTATE_WAITING || (m_eState == ESTATE_PAIRED && m_bHost == true))
+        {
+            if(strcmp(m_AcceptBuf, GAME_NAME) == 0)
+            {
+                rc = PostHostRecv(m_iCoClientNum);
+                if(rc == NO_ERROR)
+                {
+                    if(m_eState == ESTATE_WAITING)
+                    {
+                        m_eState = ESTATE_PAIRED;
+                        m_bHost = true;
+                    }
+                    m_iCoClientNum++;
+                    if(m_iCoClientNum < m_iCoClientMax)
+                    {
+                        rc = PostAccept();
+                        if(rc != NO_ERROR) return rc;
+                    }
+                }
+                else
+                {
+                    SAFE_CLOSESOCKET(m_CoClientData[m_iCoClientNum].s);
+                    rc = PostAccept();
+                    if(rc != NO_ERROR) return rc;
+                }
+            }
+            else
+            {
+                SAFE_CLOSESOCKET(m_CoClientData[m_iCoClientNum].s);
+                rc = PostAccept();
+                if(rc != NO_ERROR) return rc;
+            }
+        }
+        else
+        {
+            SAFE_CLOSESOCKET(m_CoClientData[m_iCoClientNum].s);
+        }
     }
     else
     {
-        PostBroadCastSend(time);
+        SAFE_CLOSESOCKET(m_CoClientData[m_iCoClientNum].s);
+        rc = PostAccept();
+        if(rc != NO_ERROR) return rc;
     }
+
+    return 1;
+}
+
+int CNetworkSystem::OnConnect(int rc)
+{
+    PRINT("OnConnect!");
+
+    if(rc == TRUE)
+    {
+        int opval = 1;
+        rc = setsockopt(m_soClient, SOL_SOCKET, SO_UPDATE_CONNECT_CONTEXT, (char*)&opval, sizeof(opval));
+        if(rc == SOCKET_ERROR)
+        {
+            SAFE_CLOSESOCKET(m_soClient);
+            m_eState
+        }
+        m_eState = ESTATE_PAIRED;
+        m_bHost = false;
+        rc = PostClientRecv();
+    }
+    return 1;
+}
+
+int CNetworkSystem::CheckServer(float time)
+{
+    if(m_eState != ESTATE_WAITING)                      return NO_ERROR;
+    if(time - m_fbcSendTime < m_cBroadCastSendInterval) return NO_ERROR;
+
+    int rc;
+
+    if(m_bRecvServer)
+    {
+        SAFE_CLOSESOCKET(m_soListener);
+        rc = PostConnect();
+        if(rc == NO_ERROR)
+        {
+            m_eState = ESTATE_CONNECTING;
+        }
+        else
+        {
+            SAFE_CLOSESOCKET(m_soClient);
+            m_bRecvServer = false;
+            rc = PostBroadCastSend(time);
+            if(rc != NO_ERROR) return rc;
+        }
+    }
+    else
+    {
+        rc = PostBroadCastSend(time);
+        if(rc != NO_ERROR) return rc;
+    }
+
+    return NO_ERROR;
 }

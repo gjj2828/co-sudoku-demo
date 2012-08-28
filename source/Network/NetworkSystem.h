@@ -10,7 +10,7 @@ public:
     CNetworkSystem();
     virtual int     Init();
     virtual void    Release();
-    virtual int     Update(float time);
+    virtual void    Update(float time);
     virtual int     Start(EMode mode, float time);
     virtual void    Stop();
     virtual void    RegisterListener(INetworkListener* listener) {}
@@ -78,6 +78,7 @@ private:
     EState                      m_eState;
     int                         m_iSendCount;
     bool                        m_bbcSending;
+    bool                        m_bbcRecving;
     float                       m_fbcSendTime;
     bool                        m_bHost;
 
@@ -90,6 +91,7 @@ private:
 
     SOCKET                      m_soBroadCast;
     SOCKET                      m_soListener;
+    SOCKET                      m_soClient;
 
     CoClinetData                m_CoClientData[COCLIENT_MAX];
 
@@ -105,19 +107,34 @@ private:
     BroadCastData               m_bcSendBuf;
     BroadCastData               m_bcRecvBuf;
     char                        m_AcceptBuf[GAMENAME_LEN + (sizeof(SOCKADDR_IN) + 16) * 2];
+    GameData                    m_RecvBuf;
+    GameDataQue                 m_SendBufQue;
 
     bool                        m_bRecvServer;
     in_addr                     m_Server;
     BroadCastData               m_ServerData;
 
+    int     StartInternal(EMode mode, float time);
+
     int     PostBroadCastSend(float time);
     int     PostBroadCastRecv();
     int     PostAccept();
     int     PostConnect();
-    int     PostRecv(int client);
-    void    OnBroadCastRecv();
+    int     PostClientSend();
+    int     PostClientRecv();
+    int     PostHostSend(int client);
+    int     PostHostRecv(int client);
 
-    void    CheckServer(float time);
+    int     OnBroadCastSend(int rc);
+    int     OnBroadCastRecv(int rc, DWORD bytes);
+    int     OnAccept(int rc);
+    int     OnConnect(int rc);
+    int     OnClientSend(int rc);
+    int     OnClientRecv(int rc, DWORD bytes);
+    int     OnHostSend(int rc, int client);
+    int     OnHostRecv(int rc, DWORD bytes, int client);
+
+    int     CheckServer(float time);
 
     static const char* m_cBroadCastSendAddr;
     static const float m_cBroadCastSendInterval;
