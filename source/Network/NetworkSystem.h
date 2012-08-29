@@ -77,9 +77,10 @@ private:
 
     EState                      m_eState;
     int                         m_iSendCount;
-    bool                        m_bbcSending;
-    bool                        m_bbcRecving;
-    float                       m_fbcSendTime;
+    bool                        m_bBroadCastSending;
+    bool                        m_bBroadCastRecving;
+    float                       m_fBroadCastSendTime;
+    bool                        m_bClientSending;
     bool                        m_bHost;
 
     SOCKADDR_IN                 m_bcBindAddr;
@@ -110,6 +111,8 @@ private:
     GameData                    m_RecvBuf;
     GameDataQue                 m_SendBufQue;
 
+    bool                        m_bCheckServer;
+    float                       m_fCheckServerTime;
     bool                        m_bRecvServer;
     in_addr                     m_Server;
     BroadCastData               m_ServerData;
@@ -125,19 +128,23 @@ private:
     int     PostHostSend(int client);
     int     PostHostRecv(int client);
 
-    int     OnBroadCastSend(int rc);
-    int     OnBroadCastRecv(int rc, DWORD bytes);
-    int     OnAccept(int rc);
-    int     OnConnect(int rc);
-    int     OnClientSend(int rc);
-    int     OnClientRecv(int rc, DWORD bytes);
-    int     OnHostSend(int rc, int client);
-    int     OnHostRecv(int rc, DWORD bytes, int client);
+    int     OnBroadCastSend(int rc, float time);
+    int     OnBroadCastRecv(int rc, float time, DWORD bytes);
+    int     OnAccept(int rc, float time);
+    int     OnConnect(int rc, float time);
+    int     OnClientSend(int rc, float time);
+    int     OnClientRecv(int rc, float time, DWORD bytes);
+    int     OnHostSend(int rc, float time, int client);
+    int     OnHostRecv(int rc, float time, DWORD bytes, int client);
 
-    int     CheckServer(float time);
+    void    StartCheckServer(float time);
+    void    StopCheckServer();
+    void    CheckBroadCastServer(float time);
+    int     CheckBroadCastSend(float time);
 
     static const char* m_cBroadCastSendAddr;
     static const float m_cBroadCastSendInterval;
+    static const float m_cBroadCastCheckServerInterval;
 };
 
 #endif // __NETWORKSYSTEM_H__
