@@ -24,7 +24,7 @@ CNetworkSystem::CNetworkSystem()
 , m_bCheckServer(false)
 , m_fCheckServerTime(0.0f)
 , m_bHost(false)
-, m_ibcRecAddrSize(0)
+, m_iBroadCastRecAddrSize(0)
 , m_soBroadCast(INVALID_SOCKET)
 , m_soListener(INVALID_SOCKET)
 , m_soClient(INVALID_SOCKET)
@@ -36,6 +36,7 @@ CNetworkSystem::CNetworkSystem()
     for(int i = 0; i < COCLIENT_MAX; i++)
     {
         m_CoClientData[i].s = INVALID_SOCKET;
+        m_CoClientData[i].bSending = false;
     }
 }
 
@@ -45,19 +46,19 @@ int CNetworkSystem::Init()
 
     if(WSAStartup(MAKEWORD(2, 2), &wsd)) ERROR_RTN0("Can\'t load Winsock!");
 
-    m_bcBindAddr.sin_family         = AF_INET;
-    m_bcBindAddr.sin_addr.s_addr    = htonl(INADDR_ANY);
-    m_bcBindAddr.sin_port           = htons(BROADCAST_PORT);
+    m_BroadCastBindAddr.sin_family         = AF_INET;
+    m_BroadCastBindAddr.sin_addr.s_addr    = htonl(INADDR_ANY);
+    m_BroadCastBindAddr.sin_port           = htons(BROADCAST_PORT);
 
-    m_bcSendAddr.sin_family         = AF_INET;
-    m_bcSendAddr.sin_addr.s_addr    = inet_addr(m_cBroadCastSendAddr);
-    m_bcSendAddr.sin_port           = htons(BROADCAST_PORT);
+    m_BroadCastSendAddr.sin_family         = AF_INET;
+    m_BroadCastSendAddr.sin_addr.s_addr    = inet_addr(m_cBroadCastSendAddr);
+    m_BroadCastSendAddr.sin_port           = htons(BROADCAST_PORT);
 
-    m_BindAddr.sin_family           = AF_INET;
-    m_BindAddr.sin_addr.s_addr      = htonl(INADDR_ANY);
-    m_BindAddr.sin_port             = htons(MAIN_PORT);
+    m_LocalBindAddr.sin_family           = AF_INET;
+    m_LocalBindAddr.sin_addr.s_addr      = htonl(INADDR_ANY);
+    m_LocalBindAddr.sin_port             = htons(MAIN_PORT);
 
-    m_ibcRecAddrSize                = sizeof(m_bcRecvAddr);
+    m_iBroadCastRecAddrSize                = sizeof(m_BroadCastRecvAddr);
 
     for(int i = 0; i < EEVENT_MAX; i++)
     {
@@ -65,13 +66,17 @@ int CNetworkSystem::Init()
         m_hEvents[i] = m_Overlapped[i].hEvent;
     }
 
+    strcpy(m_BroadCastSendBuf.sGameName, GAME_NAME);
+    strcpy(m_ConnectBuf, GAME_NAME);
+
     return 1;
 }
 
 void CNetworkSystem::Release()
 {
-    WSACleanup();
 
+    ReleaseInternal();
+    WSACleanup();
     this->~CNetworkSystem();
 }
 
@@ -80,7 +85,6 @@ void CNetworkSystem::Update(float time)
     if(m_eState == ESTATE_STOPPED) return;
 
     int rc;
-    DWORD dwBytes, dwFlags;
 
     typedef std::vector<int> ToDeleteVector;
     ToDeleteVector vectorToDelete;
@@ -95,8 +99,7 @@ void CNetworkSystem::Update(float time)
         if(rc == WAIT_OBJECT_0)
         {
             WSAResetEvent(m_hEvents[EEVENT_BROADCAST_SEND]);
-            rc = WSAGetOverlappedResult(m_soBroadCast, &m_Overlapped[EEVENT_BROADCAST_SEND], &dwBytes, false, &dwFlags);
-            if(!OnBroadCastSend(rc)) return;
+            if(!OnBroadCastSend()) return;
         }
 
         rc = WaitForSingleObject(m_hEvents[EEVENT_BROADCAST_RECV], 0);
@@ -104,8 +107,7 @@ void CNetworkSystem::Update(float time)
         if(rc == WAIT_OBJECT_0)
         {
             WSAResetEvent(m_hEvents[EEVENT_BROADCAST_RECV]);
-            rc = WSAGetOverlappedResult(m_soBroadCast, &m_Overlapped[EEVENT_BROADCAST_RECV], &dwBytes, false, &dwFlags);
-            if(!OnBroadCastRecv(rc, dwBytes)) return;
+            if(!OnBroadCastRecv()) return;
         }
 
         rc = WaitForSingleObject(m_hEvents[EEVENT_ACCEPT], 0);
@@ -113,7 +115,6 @@ void CNetworkSystem::Update(float time)
         if(rc == WAIT_OBJECT_0)
         {
             WSAResetEvent(m_hEvents[EEVENT_ACCEPT]);
-            rc = WSAGetOverlappedResult(m_soBroadCast, &m_Overlapped[EEVENT_ACCEPT], &dwBytes, false, &dwFlags);
             if(!OnAccept(rc)) return;
         }
 
@@ -184,13 +185,7 @@ void CNetworkSystem::Stop()
 {
     m_eState = ESTATE_STOPPED;
 
-    SAFE_CLOSESOCKET(m_soBroadCast);
-    SAFE_CLOSESOCKET(m_soListener);
-    SAFE_CLOSESOCKET(m_soClient);
-    for(int i = 0; i < COCLIENT_MAX; i++)
-    {
-        SAFE_CLOSESOCKET(m_CoClientData[i].s);
-    }
+    ReleaseInternal();
 }
 
 int CNetworkSystem::StartInternal(EMode mode, float time)
@@ -214,7 +209,7 @@ int CNetworkSystem::StartInternal(EMode mode, float time)
     m_soListener = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
     if(m_soListener == INVALID_SOCKET) return -1;
 
-    rc = bind(m_soListener, (SOCKADDR*)&m_BindAddr, sizeof(m_BindAddr));
+    rc = bind(m_soListener, (SOCKADDR*)&m_LocalBindAddr, sizeof(m_LocalBindAddr));
     if(rc == SOCKET_ERROR) return WSAGetLastError();
 
     rc = WSAIoctl( m_soListener
@@ -252,7 +247,7 @@ int CNetworkSystem::StartInternal(EMode mode, float time)
     m_soBroadCast = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
     if(m_soBroadCast == INVALID_SOCKET) return -1;
 
-    rc = bind(m_soBroadCast, (SOCKADDR*)&m_bcBindAddr, sizeof(m_bcBindAddr));
+    rc = bind(m_soBroadCast, (SOCKADDR*)&m_BroadCastBindAddr, sizeof(m_BroadCastBindAddr));
     if(rc == SOCKET_ERROR) return WSAGetLastError();
 
     rc = PostBroadCastSend(time);
@@ -276,15 +271,14 @@ int CNetworkSystem::PostBroadCastSend(float time)
     int     rc;
     DWORD   dwBytes;
 
-    strcpy(m_bcSendBuf.sGameName, GAME_NAME);
-    m_bcSendBuf.iSendCount  = m_iSendCount;
-    m_bcSendBuf.iState      = m_eState;
-    m_bcSendBuf.iClientNum  = 0;
+    m_BroadCastSendBuf.iSendCount   = m_iSendCount;
+    m_BroadCastSendBuf.iState       = m_eState;
+    m_BroadCastSendBuf.iCoClientNum = m_iCoClientNum;
     m_iSendCount++;
 
-    buf.buf = (char*)&m_bcSendBuf;
-    buf.len = sizeof(m_bcSendBuf);
-    rc = WSASendTo(m_soBroadCast, &buf, 1, &dwBytes, 0, (SOCKADDR*)&m_bcSendAddr, sizeof(m_bcSendAddr), &m_Overlapped[EEVENT_BROADCAST_SEND], NULL);
+    buf.buf = (char*)&m_BroadCastSendBuf;
+    buf.len = sizeof(m_BroadCastSendBuf);
+    rc = WSASendTo(m_soBroadCast, &buf, 1, &dwBytes, 0, (SOCKADDR*)&m_BroadCastSendAddr, sizeof(m_BroadCastSendAddr), &m_Overlapped[EEVENT_BROADCAST_SEND], NULL);
     if(rc == SOCKET_ERROR)
     {
         rc = WSAGetLastError();
@@ -307,10 +301,10 @@ int CNetworkSystem::PostBroadCastRecv()
     int     rc;
     DWORD   dwBytes, dwFlags;
 
-    buf.buf = (char*)&m_bcRecvBuf;
-    buf.len = sizeof(m_bcRecvBuf);
+    buf.buf = (char*)&m_BroadCastRecvBuf;
+    buf.len = sizeof(m_BroadCastRecvBuf);
     dwFlags = 0;
-    rc = WSARecvFrom(m_soBroadCast, &buf, 1, &dwBytes, &dwFlags, (SOCKADDR*)&m_bcRecvAddr, &m_ibcRecAddrSize, &m_Overlapped[EEVENT_BROADCAST_RECV], NULL);
+    rc = WSARecvFrom(m_soBroadCast, &buf, 1, &dwBytes, &dwFlags, (SOCKADDR*)&m_BroadCastRecvAddr, &m_iBroadCastRecAddrSize, &m_Overlapped[EEVENT_BROADCAST_RECV], NULL);
     if(rc == SOCKET_ERROR)
     {
         rc = WSAGetLastError();
@@ -330,7 +324,7 @@ int CNetworkSystem::PostAccept()
     m_CoClientData[m_iCoClientNum].s = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
     if(m_CoClientData[m_iCoClientNum].s == INVALID_SOCKET) return -1;
 
-    rc = m_lpfnAcceptEx(m_soListener, m_CoClientData[m_iCoClientNum].s, m_AcceptBuf, 0, sizeof(SOCKADDR_IN) + 16, sizeof(SOCKADDR_IN) + 16, &dwBytes, &m_Overlapped[EEVENT_ACCEPT]);
+    rc = m_lpfnAcceptEx(m_soListener, m_CoClientData[m_iCoClientNum].s, m_AcceptBuf, GAMENAME_LEN, sizeof(SOCKADDR_IN) + 16, sizeof(SOCKADDR_IN) + 16, &dwBytes, &m_Overlapped[EEVENT_ACCEPT]);
     if(rc == FALSE)
     {
         rc = WSAGetLastError();
@@ -354,7 +348,7 @@ int CNetworkSystem::PostConnect()
     m_soClient = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
     if(m_soClient == INVALID_SOCKET) return -1;
 
-    rc = bind(m_soClient, (SOCKADDR*)&m_BindAddr, sizeof(m_BindAddr));
+    rc = bind(m_soClient, (SOCKADDR*)&m_LocalBindAddr, sizeof(m_LocalBindAddr));
     if(rc == SOCKET_ERROR) return WSAGetLastError();
 
     rc = WSAIoctl( m_soClient
@@ -372,7 +366,7 @@ int CNetworkSystem::PostConnect()
     ServerAddr.sin_addr     = m_Server;
     ServerAddr.sin_port     = htons(MAIN_PORT);
 
-    rc = lpfnConnectEx(m_soClient, (SOCKADDR*)&ServerAddr, sizeof(ServerAddr), NULL, 0, &dwBytes, &m_Overlapped[EEVENT_CONNECT]);
+    rc = lpfnConnectEx(m_soClient, (SOCKADDR*)&ServerAddr, sizeof(ServerAddr), m_ConnectBuf, GAMENAME_LEN, &dwBytes, &m_Overlapped[EEVENT_CONNECT]);
     if(rc == FALSE)
     {
         rc = WSAGetLastError();
@@ -386,29 +380,25 @@ int CNetworkSystem::PostClientSend()
 {
     PRINT("PostClientSend\n");
 
-    if(m_bBroadCastSending) return NO_ERROR;
+    if(m_bClientSending) return NO_ERROR;
+    if(m_ClientSendBufQue.size() == 0) return NO_ERROR;
 
     WSABUF  buf;
     int     rc;
     DWORD   dwBytes;
 
-    strcpy(m_bcSendBuf.sGameName, GAME_NAME);
-    m_bcSendBuf.iSendCount  = m_iSendCount;
-    m_bcSendBuf.iState      = m_eState;
-    m_bcSendBuf.iClientNum  = 0;
-    m_iSendCount++;
+    GameData* pData = m_ClientSendBufQue.front();
 
-    buf.buf = (char*)&m_bcSendBuf;
-    buf.len = sizeof(m_bcSendBuf);
-    rc = WSASendTo(m_soBroadCast, &buf, 1, &dwBytes, 0, (SOCKADDR*)&m_bcSendAddr, sizeof(m_bcSendAddr), &m_Overlapped[EEVENT_BROADCAST_SEND], NULL);
+    buf.buf = (char*)pData;
+    buf.len = sizeof(GameData);
+    rc = WSASend(m_soClient, &buf, 1, &dwBytes, 0, &m_Overlapped[EEVENT_CLIENTSEND], NULL);
     if(rc == SOCKET_ERROR)
     {
         rc = WSAGetLastError();
         if(rc != WSA_IO_PENDING) return rc;
     }
 
-    m_bBroadCastSending = true;
-    m_fBroadCastSendTime = time;
+    m_bClientSending = true;
 
     return NO_ERROR;
 }
@@ -421,8 +411,8 @@ int CNetworkSystem::PostClientRecv()
     int     rc;
     DWORD   dwBytes, dwFlags;
 
-    buf.buf = (char*)&m_RecvBuf;
-    buf.len = sizeof(m_RecvBuf);
+    buf.buf = (char*)&m_ClientRecvBuf;
+    buf.len = sizeof(m_ClientRecvBuf);
     dwFlags = 0;
     rc = WSARecv(m_soClient, &buf, 1, &dwBytes, &dwFlags, &m_Overlapped[EEVENT_CLIENTRECV], NULL);
     if(rc == SOCKET_ERROR)
@@ -436,6 +426,28 @@ int CNetworkSystem::PostClientRecv()
 
 int CNetworkSystem::PostHostSend(int client)
 {
+    PRINT("PostHostSend client: %d\n", client);
+
+    if(m_bClientSending) return NO_ERROR;
+    if(m_ClientSendBufQue.size() == 0) return NO_ERROR;
+
+    WSABUF  buf;
+    int     rc;
+    DWORD   dwBytes;
+
+    GameData* pData = m_ClientSendBufQue.front();
+
+    buf.buf = (char*)pData;
+    buf.len = sizeof(GameData);
+    rc = WSASend(m_soClient, &buf, 1, &dwBytes, 0, &m_Overlapped[EEVENT_CLIENTSEND], NULL);
+    if(rc == SOCKET_ERROR)
+    {
+        rc = WSAGetLastError();
+        if(rc != WSA_IO_PENDING) return rc;
+    }
+
+    m_bClientSending = true;
+
     return NO_ERROR;
 }
 
@@ -467,39 +479,51 @@ int CNetworkSystem::PostHostRecv(int client)
 int CNetworkSystem::OnBroadCastSend(int rc, float time)
 {
     PRINT("OnBroadCastSend!");
+
+    int rc;
+    DWORD dwBytes, dwFlags;
+
+    rc = WSAGetOverlappedResult(m_soBroadCast, &m_Overlapped[EEVENT_BROADCAST_SEND], &dwBytes, false, &dwFlags);
+
     m_bBroadCastSending = false;
     return 1
 }
 
 int CNetworkSystem::OnBroadCastRecv(int rc, float time, DWORD bytes)
 {
-    PRINT("OnBroadCastRecv %s!", inet_ntoa(m_bcRecvAddr.sin_addr));
+    PRINT("OnBroadCastRecv %s!", inet_ntoa(m_BroadCastRecvAddr.sin_addr));
+
+    int rc;
+    DWORD dwBytes, dwFlags;
+
+    rc = WSAGetOverlappedResult(m_soBroadCast, &m_Overlapped[EEVENT_BROADCAST_RECV], &dwBytes, false, &dwFlags);
 
     m_bBroadCastRecving = false;
 
-    if(!m_bCheckServer) return;
-
-    if(strcmp(m_bcRecvBuf.sGameName, GAME_NAME) != 0) return;
+    if(rc == FALSE)                                             return;
+    if(dwBytes != sizeof(BroadCastData))                        return;
+    if(!m_bCheckServer)                                         return;
+    if(strcmp(m_BroadCastRecvBuf.sGameName, GAME_NAME) != 0)    return;
 
     bool bUpdateServer = false;
 
     if(m_bRecvServer)
     {
-        if(m_bcRecvAddr.sin_addr.s_addr == m_Server.s_addr) return;
-        switch(m_bcRecvBuf.iState)
+        if(m_BroadCastRecvAddr.sin_addr.s_addr == m_Server.s_addr) return;
+        switch(m_BroadCastRecvBuf.iState)
         {
         case ESTATE_STOPPED:
             break;
         case ESTATE_WAITING:
             if(m_ServerData.iState == ESTATE_WAITING)
             {
-                if(m_bcRecvBuf.iSendCount > m_ServerData.iSendCount)
+                if(m_BroadCastRecvBuf.iSendCount > m_ServerData.iSendCount)
                 {
                     bUpdateServer = true;
                 }
-                else if(m_bcRecvBuf.iSendCount == m_ServerData.iSendCount)
+                else if(m_BroadCastRecvBuf.iSendCount == m_ServerData.iSendCount)
                 {
-                    if(m_bcRecvAddr.sin_addr.s_addr < m_Server.s_addr) bUpdateServer = true;
+                    if(m_BroadCastRecvAddr.sin_addr.s_addr < m_Server.s_addr) bUpdateServer = true;
                 }
             }
             break;
@@ -510,19 +534,19 @@ int CNetworkSystem::OnBroadCastRecv(int rc, float time, DWORD bytes)
             }
             else if(m_ServerData.iState == ESTATE_PAIRED)
             {
-                if(m_bcRecvBuf.iClientNum > m_ServerData.iClientNum)
+                if(m_BroadCastRecvBuf.iCoClientNum > m_ServerData.iCoClientNum)
                 {
                     bUpdateServer = true;
                 }
-                else if(m_bcRecvBuf.iClientNum == m_ServerData.iClientNum)
+                else if(m_BroadCastRecvBuf.iCoClientNum == m_ServerData.iCoClientNum)
                 {
-                    if(m_bcRecvBuf.iSendCount > m_ServerData.iSendCount)
+                    if(m_BroadCastRecvBuf.iSendCount > m_ServerData.iSendCount)
                     {
                         bUpdateServer = true;
                     }
-                    else if(m_bcRecvBuf.iSendCount == m_ServerData.iSendCount)
+                    else if(m_BroadCastRecvBuf.iSendCount == m_ServerData.iSendCount)
                     {
-                        if(m_bcRecvAddr.sin_addr.s_addr < m_Server.s_addr) bUpdateServer = true;
+                        if(m_BroadCastRecvAddr.sin_addr.s_addr < m_Server.s_addr) bUpdateServer = true;
                     }
                 }
             }
@@ -534,44 +558,54 @@ int CNetworkSystem::OnBroadCastRecv(int rc, float time, DWORD bytes)
     }
     else
     {
-        if(m_bcRecvBuf.iSendCount > m_iSendCount)
+        if(m_BroadCastRecvBuf.iSendCount > m_iSendCount)
         {
             bUpdateServer = true;
         }
-        else if(m_bcRecvBuf.iSendCount == m_iSendCount)
+        else if(m_BroadCastRecvBuf.iSendCount == m_iSendCount)
         {
             int         rc;
             DWORD       dwBytes;
             SOCKADDR_IN LocalIf;
             rc = WSAIoctl( m_soBroadCast
                          , SIO_ROUTING_INTERFACE_QUERY
-                         , &m_bcRecvAddr
-                         , sizeof(m_bcRecvAddr)
+                         , &m_BroadCastRecvAddr
+                         , sizeof(m_BroadCastRecvAddr)
                          , (SOCKADDR *)&LocalIf
                          , sizeof(LocalIf)
                          , &dwBytes
                          , NULL
                          , NULL );
             if(rc == SOCKET_ERROR) return;
-            if(m_bcRecvAddr.sin_addr.s_addr < LocalIf.sin_addr.s_addr) bUpdateServer = true;
+            if(m_BroadCastRecvAddr.sin_addr.s_addr < LocalIf.sin_addr.s_addr) bUpdateServer = true;
         }
     }
 
     if(bUpdateServer)
     {
-        m_Server        = m_bcRecvAddr.sin_addr;
-        m_ServerData    = m_bcRecvBuf;
+        m_Server        = m_BroadCastRecvAddr.sin_addr;
+        m_ServerData    = m_BroadCastRecvBuf;
         m_bRecvServer   = true;
     }
 
-    PostBroadCastRecv();
+    if(PostBroadCastRecv() != NO_ERROR)
+    {
+        Stop();
+        return 0;
+    }
 
     return 1;
 }
 
-int CNetworkSystem::OnAccept(int rc, float time)
+int CNetworkSystem::OnAccept(float time)
 {
     PRINT("OnAccept!");
+
+    int rc;
+    DWORD dwBytes, dwFlags;
+
+    rc = WSAGetOverlappedResult(m_soBroadCast, &m_Overlapped[EEVENT_ACCEPT], &dwBytes, false, &dwFlags);
+
     if(rc == TRUE)
     {
         SOCKADDR*   LocalSockaddr;
@@ -726,4 +760,29 @@ int CNetworkSystem::CheckBroadCastSend(float time)
     }
 
     return 1;
+}
+
+void CNetworkSystem::ReleaseInternal()
+{
+    SAFE_CLOSESOCKET(m_soBroadCast);
+    SAFE_CLOSESOCKET(m_soListener);
+    SAFE_CLOSESOCKET(m_soClient);
+    for(int i = 0; i < COCLIENT_MAX; i++)
+    {
+        ReleaseCoClientData(i);
+    }
+}
+
+void CNetworkSystem::ReleaseCoClientData(int client)
+{
+    if(client >= COCLIENT_MAX) return;
+
+    SAFE_CLOSESOCKET(m_CoClientData[client]);
+    m_CoClientData[client].bSending = false;
+    while(m_CoClientData[client].SendBufQue.size())
+    {
+        GameData* pData = m_CoClientData[client].SendBufQue.front();
+        SAFE_DELETE(pData);
+        m_CoClientData[client].SendBufQue.pop_front();
+    }
 }

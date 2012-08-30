@@ -57,7 +57,7 @@ private:
         char    sGameName[GAMENAME_LEN];
         int     iSendCount;
         UINT    iState      :  2;
-        UINT    iClientNum  :  5;
+        UINT    iCoClientNum  :  5;
         UINT    iDummy      : 25;
     };
 
@@ -73,6 +73,7 @@ private:
         SOCKET      s;
         GameData    RecvBuf;
         GameDataQue SendBufQue;
+        bool        bSending;
     };
 
     EState                      m_eState;
@@ -83,12 +84,12 @@ private:
     bool                        m_bClientSending;
     bool                        m_bHost;
 
-    SOCKADDR_IN                 m_bcBindAddr;
-    SOCKADDR_IN                 m_bcSendAddr;
-    SOCKADDR_IN                 m_bcRecvAddr;
-    SOCKADDR_IN                 m_BindAddr;
+    SOCKADDR_IN                 m_BroadCastBindAddr;
+    SOCKADDR_IN                 m_BroadCastSendAddr;
+    SOCKADDR_IN                 m_BroadCastRecvAddr;
+    SOCKADDR_IN                 m_LocalBindAddr;
 
-    int                         m_ibcRecAddrSize;
+    int                         m_iBroadCastRecAddrSize;
 
     SOCKET                      m_soBroadCast;
     SOCKET                      m_soListener;
@@ -105,11 +106,12 @@ private:
     HANDLE                      m_hEvents[EEVENT_MAX];
     WSAOVERLAPPED               m_Overlapped[EEVENT_MAX];
 
-    BroadCastData               m_bcSendBuf;
-    BroadCastData               m_bcRecvBuf;
+    BroadCastData               m_BroadCastSendBuf;
+    BroadCastData               m_BroadCastRecvBuf;
     char                        m_AcceptBuf[GAMENAME_LEN + (sizeof(SOCKADDR_IN) + 16) * 2];
-    GameData                    m_RecvBuf;
-    GameDataQue                 m_SendBufQue;
+    char                        m_ConnectBuf[GAMENAME_LEN];
+    GameData                    m_ClientRecvBuf;
+    GameDataQue                 m_ClientSendBufQue;
 
     bool                        m_bCheckServer;
     float                       m_fCheckServerTime;
@@ -128,19 +130,22 @@ private:
     int     PostHostSend(int client);
     int     PostHostRecv(int client);
 
-    int     OnBroadCastSend(int rc, float time);
-    int     OnBroadCastRecv(int rc, float time, DWORD bytes);
-    int     OnAccept(int rc, float time);
-    int     OnConnect(int rc, float time);
-    int     OnClientSend(int rc, float time);
-    int     OnClientRecv(int rc, float time, DWORD bytes);
-    int     OnHostSend(int rc, float time, int client);
-    int     OnHostRecv(int rc, float time, DWORD bytes, int client);
+    int     OnBroadCastSend(float time);
+    int     OnBroadCastRecv(float time);
+    int     OnAccept(float time);
+    int     OnConnect(float time);
+    int     OnClientSend(float time);
+    int     OnClientRecv(float time);
+    int     OnHostSend(float time, int client);
+    int     OnHostRecv(float time, int client);
 
     void    StartCheckServer(float time);
     void    StopCheckServer();
     void    CheckBroadCastServer(float time);
     int     CheckBroadCastSend(float time);
+
+    void    ReleaseInternal();
+    void    ReleaseCoClientData(int client);
 
     static const char* m_cBroadCastSendAddr;
     static const float m_cBroadCastSendInterval;
