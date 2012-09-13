@@ -209,8 +209,7 @@ int CNetworkSystem::StartInternal(EMode mode, float time)
     m_soListener = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
     if(m_soListener == INVALID_SOCKET) return -1;
 
-    rc = bind(m_soListener, (SOCKADDR*)&m_LocalBindAddr, sizeof(m_LocalBindAddr));
-    if(rc == SOCKET_ERROR) return WSAGetLastError();
+    if(bind(m_soListener, (SOCKADDR*)&m_LocalBindAddr, sizeof(m_LocalBindAddr)) == SOCKET_ERROR) return WSAGetLastError();
 
     rc = WSAIoctl( m_soListener
         , SIO_GET_EXTENSION_FUNCTION_POINTER
@@ -282,7 +281,11 @@ int CNetworkSystem::PostBroadCastSend(float time)
     if(rc == SOCKET_ERROR)
     {
         rc = WSAGetLastError();
-        if(rc != WSA_IO_PENDING) return rc;
+        if(rc != WSA_IO_PENDING)
+        {
+            Stop();
+            return rc;
+        }
     }
 
     m_bBroadCastSending = true;
@@ -308,7 +311,11 @@ int CNetworkSystem::PostBroadCastRecv()
     if(rc == SOCKET_ERROR)
     {
         rc = WSAGetLastError();
-        if(rc != WSA_IO_PENDING) return rc;
+        if(rc != WSA_IO_PENDING)
+        {
+            Stop();
+            return rc;
+        }
     }
 
     return NO_ERROR;
@@ -323,10 +330,10 @@ int CNetworkSystem::PostAccept()
     int rc;
     DWORD dwBytes;
 
-    m_CoClientData[m_iCoClientNum].s = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-    if(m_CoClientData[m_iCoClientNum].s == INVALID_SOCKET) return -1;
+    m_CoClientData[m_iCoClinetAccept].s = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+    if(m_CoClientData[m_iCoClinetAccept].s == INVALID_SOCKET) return -1;
 
-    rc = m_lpfnAcceptEx(m_soListener, m_CoClientData[m_iCoClientNum].s, m_AcceptBuf, GAMENAME_LEN, sizeof(SOCKADDR_IN) + 16, sizeof(SOCKADDR_IN) + 16, &dwBytes, &m_Overlapped[EEVENT_ACCEPT]);
+    rc = m_lpfnAcceptEx(m_soListener, m_CoClientData[m_iCoClinetAccept].s, m_AcceptBuf, GAMENAME_LEN, sizeof(SOCKADDR_IN) + 16, sizeof(SOCKADDR_IN) + 16, &dwBytes, &m_Overlapped[EEVENT_ACCEPT]);
     if(rc == FALSE)
     {
         rc = WSAGetLastError();
@@ -589,11 +596,7 @@ int CNetworkSystem::OnBroadCastRecv(int rc, float time, DWORD bytes)
         m_bRecvServer   = true;
     }
 
-    if(PostBroadCastRecv() != NO_ERROR)
-    {
-        Stop();
-        return 0;
-    }
+    if(PostBroadCastRecv() != NO_ERROR) return 0;
 
     return 1;
 }
@@ -605,7 +608,7 @@ int CNetworkSystem::OnAccept(float time)
     int rc;
     DWORD dwBytes, dwFlags;
 
-    rc = WSAGetOverlappedResult(m_soBroadCast, &m_Overlapped[EEVENT_ACCEPT], &dwBytes, false, &dwFlags);
+    rc = WSAGetOverlappedResult(m_CoClientData[m_iCoClinetAccept].s, &m_Overlapped[EEVENT_ACCEPT], &dwBytes, false, &dwFlags);
 
     if(rc == TRUE)
     {
@@ -619,7 +622,7 @@ int CNetworkSystem::OnAccept(float time)
         {
             if(strcmp(m_AcceptBuf, GAME_NAME) == 0)
             {
-                rc = PostHostRecv(m_iCoClientNum);
+                rc = PostHostRecv(m_iCoClinetAccept);
                 if(rc == NO_ERROR)
                 {
                     if(m_eState == ESTATE_WAITING)
@@ -628,36 +631,55 @@ int CNetworkSystem::OnAccept(float time)
                         m_bHost = true;
                     }
                     m_iCoClientNum++;
-                    if(m_iCoClientNum < m_iCoClientMax)
+                    rc = PostAccept();
+                    if(rc != NO_ERROR)
                     {
-                        rc = PostAccept();
-                        if(rc != NO_ERROR) return rc;
+                        Stop();
+                        return 0;
                     }
                 }
                 else
                 {
                     SAFE_CLOSESOCKET(m_CoClientData[m_iCoClientNum].s);
                     rc = PostAccept();
-                    if(rc != NO_ERROR) return rc;
+                    if(rc != NO_ERROR)
+                    {
+                        Stop();
+                        return 0;
+                    }
                 }
             }
             else
             {
                 SAFE_CLOSESOCKET(m_CoClientData[m_iCoClientNum].s);
                 rc = PostAccept();
-                if(rc != NO_ERROR) return rc;
+                if(rc != NO_ERROR)
+                {
+                    Stop();
+                    return 0;
+                }
             }
         }
         else
         {
             SAFE_CLOSESOCKET(m_CoClientData[m_iCoClientNum].s);
+            rc = PostAccept();
+            if(rc != NO_ERROR)
+            {
+                Stop();
+                return 0;
+            }
         }
     }
     else
     {
         SAFE_CLOSESOCKET(m_CoClientData[m_iCoClientNum].s);
         rc = PostAccept();
-        if(rc != NO_ERROR) return rc;
+        if(rc != NO_ERROR)
+        {
+            Stop();
+            return 0;
+        }
     }
 
     return 1;
@@ -753,11 +775,7 @@ int CNetworkSystem::CheckBroadCastSend(float time)
         int rc;
         m_fBroadCastSendTime = time;
         rc = PostBroadCastSend(time);
-        if(rc != NO_ERROR)
-        {
-            Stop();
-            return 0;
-        }
+        if(rc != NO_ERROR) return 0;
     }
 
     return 1;
