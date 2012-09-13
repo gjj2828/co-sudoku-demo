@@ -102,6 +102,7 @@ private:
 
     int                         m_iCoClientMax;
     int                         m_iCoClientNum;
+    int                         m_iCoClinetAccept;
 
     HANDLE                      m_hEvents[EEVENT_MAX];
     WSAOVERLAPPED               m_Overlapped[EEVENT_MAX];
@@ -143,6 +144,8 @@ private:
     void    StopCheckServer();
     void    CheckBroadCastServer(float time);
     int     CheckBroadCastSend(float time);
+
+    bool    FindEmptyCoClient(int& empty);
 
     void    ReleaseInternal();
     void    ReleaseCoClientData(int client);
