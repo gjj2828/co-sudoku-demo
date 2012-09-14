@@ -140,7 +140,12 @@ private:
     int     OnHostSend(float time, int client);
     int     OnHostRecv(float time, int client);
 
-    void    StartCheckServer(float time);
+    void    StartClient();
+    int     StopClient(float time);
+    void    StartCoClient(int client);
+    void    StopCoClient(int client);
+
+    int     StartCheckServer(float time);
     void    StopCheckServer();
     void    CheckBroadCastServer(float time);
     int     CheckBroadCastSend(float time);
