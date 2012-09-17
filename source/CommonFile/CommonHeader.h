@@ -121,6 +121,18 @@ enum
     return 0;                \
 }
 
+#define STOP_RTN0   \
+{                   \
+    Stop(context);  \
+    return 0;       \
+}
+
+#define STOP_RTN    \
+{                   \
+    Stop(context);  \
+    return;         \
+}
+
 #define BITTOCHARBUFFER(bit, buffer, bitlen, buflen)            \
 {                                                               \
     int index = 0;                                              \

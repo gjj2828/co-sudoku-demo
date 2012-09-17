@@ -10,9 +10,9 @@ public:
     CNetworkSystem();
     virtual int     Init();
     virtual void    Release();
-    virtual void    Update(float time);
     virtual int     Start(EMode mode, float time);
     virtual void    Stop();
+    virtual void    Update(float time);
     virtual void    RegisterListener(INetworkListener* listener) {}
     virtual void    UnRegisterListener(INetworkListener* listener) {}
 
@@ -79,7 +79,6 @@ private:
     EState                      m_eState;
     int                         m_iSendCount;
     bool                        m_bBroadCastSending;
-    bool                        m_bBroadCastRecving;
     float                       m_fBroadCastSendTime;
     bool                        m_bClientSending;
     bool                        m_bHost;
@@ -93,6 +92,7 @@ private:
 
     SOCKET                      m_soBroadCast;
     SOCKET                      m_soListener;
+    SOCKET                      m_soAccept;
     SOCKET                      m_soClient;
 
     CoClinetData                m_CoClientData[COCLIENT_MAX];
@@ -102,7 +102,6 @@ private:
 
     int                         m_iCoClientMax;
     int                         m_iCoClientNum;
-    int                         m_iCoClinetAccept;
 
     HANDLE                      m_hEvents[EEVENT_MAX];
     WSAOVERLAPPED               m_Overlapped[EEVENT_MAX];
@@ -119,8 +118,6 @@ private:
     bool                        m_bRecvServer;
     in_addr                     m_Server;
     BroadCastData               m_ServerData;
-
-    int     StartInternal(EMode mode, float time);
 
     int     PostBroadCastSend(float time);
     int     PostBroadCastRecv();
@@ -141,11 +138,11 @@ private:
     int     OnHostRecv(float time, int client);
 
     void    StartClient();
-    int     StopClient(float time);
+    void    StopClient(float time);
     void    StartCoClient(int client);
     void    StopCoClient(int client);
 
-    int     StartCheckServer(float time);
+    void    StartCheckServer(float time);
     void    StopCheckServer();
     void    CheckBroadCastServer(float time);
     int     CheckBroadCastSend(float time);
