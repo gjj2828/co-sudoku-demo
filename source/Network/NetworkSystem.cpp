@@ -363,11 +363,7 @@ int CNetworkSystem::PostClientSend(float time)
     if(WSASend(m_soClient, &buf, 1, &dwBytes, 0, &m_Overlapped[EEVENT_CLIENTSEND], NULL) == SOCKET_ERROR)
     {
         rc = WSAGetLastError();
-        if(rc != WSA_IO_PENDING)
-        {
-            StopClient(time);
-            return rc;
-        }
+        if(rc != WSA_IO_PENDING) return rc;
     }
 
     m_bClientSending = true;
@@ -390,11 +386,7 @@ int CNetworkSystem::PostClientRecv(float time)
     if(WSARecv(m_soClient, &buf, 1, &dwBytes, &dwFlags, &m_Overlapped[EEVENT_CLIENTRECV], NULL) == SOCKET_ERROR)
     {
         rc = WSAGetLastError();
-        if(rc != WSA_IO_PENDING)
-        {
-            StopClient(time);
-            return rc;
-        }
+        if(rc != WSA_IO_PENDING) return rc;
     }
 
     return NO_ERROR;
@@ -404,46 +396,42 @@ int CNetworkSystem::PostHostSend(int client)
 {
     PRINT("PostHostSend client: %d\n", client);
 
-    if(m_bClientSending) return NO_ERROR;
-    if(m_ClientSendBufQue.size() == 0) return NO_ERROR;
+    if(m_CoClientData[client].bSending) return NO_ERROR;
+    if(m_CoClientData[client].SendBufQue.size() == 0) return NO_ERROR;
 
     WSABUF  buf;
     int     rc;
     DWORD   dwBytes;
 
-    GameData* pData = m_ClientSendBufQue.front();
+    GameData* pData = m_CoClientData[client].SendBufQue.front();
 
     buf.buf = (char*)pData;
     buf.len = sizeof(GameData);
 
-    if(WSASend(m_soClient, &buf, 1, &dwBytes, 0, &m_Overlapped[EEVENT_CLIENTSEND], NULL) == SOCKET_ERROR)
+    if(WSASend(m_CoClientData[client].s, &buf, 1, &dwBytes, 0, &m_Overlapped[EEVENT_HOSTSEND_MIN + client], NULL) == SOCKET_ERROR)
     {
         rc = WSAGetLastError();
         if(rc != WSA_IO_PENDING) return rc;
     }
 
-    m_bClientSending = true;
+    m_CoClientData[client].bSending = true;
 
     return NO_ERROR;
 }
 
 int CNetworkSystem::PostHostRecv(int client)
 {
-    PRINT("PostHostRecv\n");
-
-    if(client >= m_iCoClientMax) return -1;
+    PRINT("PostHostRecv client: %d\n", client);
 
     WSABUF  buf;
     int     rc;
     DWORD   dwBytes, dwFlags;
 
-    CoClinetData* pData = &m_CoClientData[client];
-
-    buf.buf = (char*)&pData->RecvBuf;
-    buf.len = sizeof(pData->RecvBuf);
+    buf.buf = (char*)&m_CoClientData[client].RecvBuf;
+    buf.len = sizeof(m_CoClientData[client].RecvBuf);
 
     dwFlags = 0;
-    if(WSARecv(m_CoClientData[client].s, &buf, 1, &dwBytes, &dwFlags, &m_Overlapped[EEVENT_HOSTRECV_MIN + client], NULL) == SOCKET_ERROR)
+    if(WSARecv(m_soClient, &buf, 1, &dwBytes, &dwFlags, &m_Overlapped[EEVENT_HOSTRECV_MIN + client], NULL) == SOCKET_ERROR)
     {
         rc = WSAGetLastError();
         if(rc != WSA_IO_PENDING) return rc;
@@ -627,37 +615,71 @@ int CNetworkSystem::OnConnect(float time)
 {
     PRINT("OnConnect!");
 
+    int rc;
     DWORD dwBytes, dwFlags;
 
-    if(WSAGetOverlappedResult(m_soClient, &m_Overlapped[EEVENT_CONNECT], &dwBytes, false, &dwFlags) == TRUE)
+    rc = WSAGetOverlappedResult(m_soClient, &m_Overlapped[EEVENT_CONNECT], &dwBytes, false, &dwFlags);
+
+    bool bSuccess = false;
+    if(rc == TRUE)
     {
         int opval = 1;
-        if(setsockopt(m_soClient, SOL_SOCKET, SO_UPDATE_CONNECT_CONTEXT, (char*)&opval, sizeof(opval)) == SOCKET_ERROR)
+        if(setsockopt(m_soClient, SOL_SOCKET, SO_UPDATE_CONNECT_CONTEXT, (char*)&opval, sizeof(opval)) != SOCKET_ERROR)
         {
-            StopClient(time);
+            m_eState = ESTATE_PAIRED;
+            m_bHost = false;
+            if(PostClientRecv() == NO_ERROR) bSuccess = true;
         }
-        m_eState = ESTATE_PAIRED;
-        m_bHost = false;
-        if(PostClientRecv() != NO_ERROR)
-        {
-            StopClient(time);
-        }
+    }
+
+    if(!bSuccess) StopClient(time);
+
+    return NO_ERROR;
+}
+
+int CNetworkSystem::OnClientSend(float time)
+{
+    PRINT("OnClientSend!");
+
+    int rc;
+    DWORD dwBytes, dwFlags;
+
+    rc = WSAGetOverlappedResult(m_soClient, &m_Overlapped[EEVENT_CLIENTSEND], &dwBytes, false, &dwFlags);
+
+    if(rc == TRUE) 
+    {
+        m_bClientSending = false;
+        SAFE_DELETE(m_ClientSendBufQue.front());
+        m_ClientSendBufQue.pop_front();
+        PostClientSend(time);
     }
     else
     {
         StopClient(time);
     }
-    return 1;
+
+    return NO_ERROR;
 }
 
-int CNetworkSystem::OnClientSend(int rc, float time)
+int CNetworkSystem::OnClientRecv(float time)
 {
-    return 1;
-}
+    PRINT("OnClientRecv!");
 
-int CNetworkSystem::OnClientRecv(int rc, float time, DWORD bytes)
-{
-    return 1;
+    int rc;
+    DWORD dwBytes, dwFlags;
+
+    rc = WSAGetOverlappedResult(m_soClient, &m_Overlapped[EEVENT_CLIENTRECV], &dwBytes, false, &dwFlags);
+
+    if(rc == FALSE || dwBytes == 0) 
+    {
+        StopClient(time);
+    }
+    else
+    {
+        PostClientSend(time);
+    }
+
+    return NO_ERROR;
 }
 
 int CNetworkSystem::OnHostSend(int rc, float time, int client)
