@@ -221,6 +221,10 @@
 				RelativePath=".\Timer.h"
 				>
 			</File>
+			<File
+				RelativePath=".\UserPacket.h"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="资源文件"

@@ -162,6 +162,10 @@
 				RelativePath=".\IRenderSystem.h"
 				>
 			</File>
+			<File
+				RelativePath=".\Packet.h"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="资源文件"

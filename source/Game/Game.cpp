@@ -3,6 +3,7 @@
 #include <IPuzzleSystem.h>
 #include <IRenderSystem.h>
 #include "Timer.h"
+#include "UserPacket.h"
 
 const char* CGame::m_cClassName = GAME_NAME;
 const char* CGame::m_cWindowName = GAME_NAME;
@@ -22,6 +23,8 @@ CGame::CGame()
     ZeroMemory(m_hModules, sizeof(HMODULE) * EMODULE_MAX);
     ZeroMemory(&m_env, sizeof(GlobalEnviroment));
     m_env.pGame = this;
+
+    TestPacket test;
 }
 
 int CGame::Init(HINSTANCE hInstance)
@@ -66,7 +69,7 @@ void CGame::Run()
         if(bQuit) break;
 
         UpdateTimer();
-        m_env.pNetworkSystem->Update(m_fTime)
+        m_env.pNetworkSystem->Update(m_fTime);
     }
 }
 
