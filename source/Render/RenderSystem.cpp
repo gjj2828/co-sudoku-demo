@@ -10,13 +10,13 @@ CRenderSystem::CRenderSystem()
 , m_hFont(NULL)
 , m_hbChoiced(NULL)
 {
-    memset(&m_ClientRect, 0, sizeof(RECT));
-    memset(&m_Start, 0, sizeof(POINT));
-    memset(m_Grids, 0, sizeof(GridData));
-    memset(m_NVLine, 0, sizeof(RECT));
-    memset(m_NHLine, 0, sizeof(RECT));
-    memset(m_WVLine, 0, sizeof(RECT));
-    memset(m_WHLine, 0, sizeof(RECT));
+    ZeroMemory(&m_ClientRect, sizeof(RECT));
+    ZeroMemory(&m_Start, sizeof(POINT));
+    ZeroMemory(m_Grids, sizeof(GridData));
+    ZeroMemory(m_NVLine, sizeof(RECT));
+    ZeroMemory(m_NHLine, sizeof(RECT));
+    ZeroMemory(m_WVLine, sizeof(RECT));
+    ZeroMemory(m_WHLine, sizeof(RECT));
 }
 
 int CRenderSystem::Init(HWND hwnd, IGridManager*& gm)

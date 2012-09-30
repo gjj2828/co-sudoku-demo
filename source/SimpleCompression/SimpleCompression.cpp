@@ -8,7 +8,7 @@ EEncodeRet  CSimpleCompression::Encode(const ComPuzExpr& puzzle, UCHAR* buffer, 
         length = LENGTH;
         return ENCODERET_BUFFERLACK;
     }
-    memset(buffer, 0, sizeof(UCHAR) * length);
+    ZeroMemory(buffer, sizeof(UCHAR) * length);
     std::bitset<BITLEN>    bit;
     for(int i = 0; i < ROWNUM; i++)
     {
