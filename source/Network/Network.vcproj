@@ -189,7 +189,15 @@
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
 			<File
+				RelativePath=".\ISockObj.h"
+				>
+			</File>
+			<File
 				RelativePath=".\NetworkSystem.h"
+				>
+			</File>
+			<File
+				RelativePath=".\SockObj.h"
 				>
 			</File>
 			<File
