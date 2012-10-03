@@ -171,6 +171,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\SockObj.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\StdAfx.cpp"
 				>
 				<FileConfiguration
