@@ -1,22 +1,23 @@
 #ifndef __SOCKOBJ_H__
 #define __SOCKOBJ_H__
 
+#include <INetworkEvent.h>
 #include "ISockObj.h"
 
 class CSockObj : public ISockObj
 {
 public:
-    CSockObj(int id, ESockType type, SOCallBack callback);
+    CSockObj(int id, INetworkEventManager* event_manager);
     ~CSockObj();
 
+    virtual int     Create(ESockType type);
     virtual int     GetId() {return m_iId;}
-    virtual void    SetId(int id) {m_iId = id;};
     virtual int     Bind(const sockaddr* addr, int namelen);
     virtual int     Listen(int backlog);
-    virtual int     Accept();
-    virtual int     Connect();
-    virtual int     Send(Packet* packet);
-    virtual int     Recv();
+    virtual int     PostAccept(ISockObj* accept, char* buf, int len);
+    virtual int     PostConnect();
+    virtual int     PostSend(Packet* packet);
+    virtual int     PostRecv();
 
 private:
     enum EEvent
@@ -28,25 +29,35 @@ private:
         EEVENT_RECV,
         EEVENT_MAX,
     };
-    enum ETcpType
-    {
-        ETCPTYPE_MIN,
-        ETCPTYPE_UNDECIDED = ETCPTYPE_MIN,
-        ETCPTYPE_LISTEN,
-        ETCPTYPE_ACCEPT,
-        ETCPTYPE_CONNECT,
-        ETCPTYPE_MAX,
-    };
+    //enum ETcpType
+    //{
+    //    ETCPTYPE_MIN,
+    //    ETCPTYPE_UNDECIDED = ETCPTYPE_MIN,
+    //    ETCPTYPE_LISTEN,
+    //    ETCPTYPE_ACCEPT,
+    //    ETCPTYPE_CONNECT,
+    //    ETCPTYPE_MAX,
+    //};
+
     int                         m_iId;
     ESockType                   m_eSockType;
-    ETcpType                    m_eTcpType;
+    //ETcpType                    m_eTcpType;
     SOCKET                      m_Sock;
     HANDLE                      m_hEvents[EEVENT_MAX];
     WSAOVERLAPPED               m_Overlapped[EEVENT_MAX];
     LPFN_ACCEPTEX               m_lpfnAcceptEx;
     LPFN_GETACCEPTEXSOCKADDRS   m_lpfnGetAcceptExSockaddrs;
-    SOCallBack                  m_CallBack;
-    CSockObj*                   m_AcceptSO;
+    INetworkEventManager*       m_pEventManager;
+    CSockObj*                   m_pAcceptSO;
+
+    int     CreateI(ESockType type);
+    int     BindI(const sockaddr* addr, int namelen);
+    int     ListenI(int backlog);
+    int     PostAcceptI(ISockObj* accept, char* buf, int len);
+    int     PostConnectI();
+    int     PostSendI(Packet* packet);
+    int     PostRecvI();
+    void    PostEvent(INetworkEventManager::EEvent event, int ret, ISockObj* accept, Packet* recv);
 };
 
 #endif // __SOCKOBJ_H__

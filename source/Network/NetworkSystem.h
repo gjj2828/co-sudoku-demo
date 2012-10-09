@@ -2,9 +2,10 @@
 #define __NETWORKSYSTEM_H__
 
 #include <INetworkSystem.h>
+#include <INetworkEvent.h>
 #include <MSWSock.h>
 
-class CNetworkSystem: public INetworkSystem
+class CNetworkSystem: public INetworkSystem, public INetworkEventManager
 {
 public:
     CNetworkSystem();
@@ -35,21 +36,21 @@ private:
         GAMENAME_LEN    = 16,
     };
 
-    enum EEvent
-    {
-        EEVENT_MIN,
-        EEVENT_BROADCAST_SEND = EEVENT_MIN,
-        EEVENT_BROADCAST_RECV,
-        EEVENT_ACCEPT,
-        EEVENT_CONNECT,
-        EEVENT_CLIENTSEND,
-        EEVENT_CLIENTRECV,
-        EEVENT_HOSTSEND_MIN = EEVENT_CLIENTSEND,
-        EEVENT_HOSTSEND_MAX = EEVENT_HOSTSEND_MIN + COCLIENT_MAX,
-        EEVENT_HOSTRECV_MIN = EEVENT_HOSTSEND_MAX,
-        EEVENT_HOSTRECV_MAX = EEVENT_HOSTRECV_MIN + COCLIENT_MAX,
-        EEVENT_MAX = EEVENT_HOSTRECV_MAX,
-    };
+    //enum EEvent
+    //{
+    //    EEVENT_MIN,
+    //    EEVENT_BROADCAST_SEND = EEVENT_MIN,
+    //    EEVENT_BROADCAST_RECV,
+    //    EEVENT_ACCEPT,
+    //    EEVENT_CONNECT,
+    //    EEVENT_CLIENTSEND,
+    //    EEVENT_CLIENTRECV,
+    //    EEVENT_HOSTSEND_MIN = EEVENT_CLIENTSEND,
+    //    EEVENT_HOSTSEND_MAX = EEVENT_HOSTSEND_MIN + COCLIENT_MAX,
+    //    EEVENT_HOSTRECV_MIN = EEVENT_HOSTSEND_MAX,
+    //    EEVENT_HOSTRECV_MAX = EEVENT_HOSTRECV_MIN + COCLIENT_MAX,
+    //    EEVENT_MAX = EEVENT_HOSTRECV_MAX,
+    //};
 
     struct BroadCastData
     {
