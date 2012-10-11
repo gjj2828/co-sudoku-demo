@@ -15,7 +15,7 @@ public:
     virtual int     Bind(const sockaddr* addr, int namelen);
     virtual int     Listen(int backlog);
     virtual int     PostAccept(ISockObj* accept, char* buf, int len);
-    virtual int     PostConnect();
+    virtual int     PostConnect(const sockaddr* addr, int namelen);
     virtual int     PostSend(Packet* packet);
     virtual int     PostRecv();
 
@@ -23,8 +23,8 @@ private:
     enum EEvent
     {
         EEVENT_MIN,
-        EEVENT_ACCPET = EEVENT_MIN,
-        EEVENT_CONNECT = EEVENT_ACCPET,
+        EEVENT_ACCEPT = EEVENT_MIN,
+        EEVENT_CONNECT = EEVENT_ACCEPT,
         EEVENT_SEND,
         EEVENT_RECV,
         EEVENT_MAX,
@@ -49,12 +49,14 @@ private:
     LPFN_GETACCEPTEXSOCKADDRS   m_lpfnGetAcceptExSockaddrs;
     INetworkEventManager*       m_pEventManager;
     CSockObj*                   m_pAcceptSO;
+    char*                       m_pBuf;
+    int                         m_iBufLen;
 
     int     CreateI(ESockType type);
     int     BindI(const sockaddr* addr, int namelen);
     int     ListenI(int backlog);
     int     PostAcceptI(ISockObj* accept, char* buf, int len);
-    int     PostConnectI();
+    int     PostConnectI(const sockaddr* addr, int namelen);
     int     PostSendI(Packet* packet);
     int     PostRecvI();
     void    PostEvent(INetworkEventManager::EEvent event, int ret, ISockObj* accept, Packet* recv);

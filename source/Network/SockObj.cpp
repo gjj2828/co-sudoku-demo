@@ -5,8 +5,12 @@ CSockObj::CSockObj(int id, ESockType type, INetworkEventManager* event_manager)
  : m_iId(id)
  , m_eSockType(ESOCKTYPE_UNDECIDED)
  , m_Sock(INVALID_SOCKET)
+ , m_lpfnAcceptEx(NULL)
+ , m_lpfnGetAcceptExSockaddrs(NULL)
  , m_pEventManager(event_manager)
  , m_pAcceptSO(NULL)
+ , m_pBuf(NULL)
+ , m_iBufLen(0)
 {
     for(int i = 0; i < EEVENT_MAX; i++)
     {
@@ -35,6 +39,8 @@ void CSockObj::Close()
 {
     SAFE_CLOSESOCKET(m_Sock);
     m_eSockType = ESOCKTYPE_UNDECIDED;
+    m_lpfnAcceptEx = NULL;
+    m_lpfnGetAcceptExSockaddrs = NULL;
 }
 
 int CSockObj::Bind(const sockaddr* addr, int namelen)
@@ -55,6 +61,13 @@ int CSockObj::PostAccept(ISockObj* accept, char* buf, int len)
 {
     int iRetCode = PostAcceptI(accept, buf, len);
     if(iRetCode != NO_ERROR) PostEvent(INetworkEventManager::EEVENT_POSTACCEPTFAIL, iRetCode);
+    return iRetCode;
+}
+
+int CSockObj::PostConnect(const sockaddr* addr, int namelen)
+{
+    int iRetCode = PostConnectI(addr, namelen);
+    if(iRetCode != NO_ERROR) PostEvent(INetworkEventManager::EEVENT_POSTCONNECTFAIL, iRetCode);
     return iRetCode;
 }
 
@@ -126,16 +139,58 @@ int CSockObj::ListenI(int backlog)
     return NO_ERROR;
 }
 
-int CSockObj::PostAccept(ISockObj* accept, char* buf, int len)
+int CSockObj::PostAcceptI(ISockObj* accept, char* buf, int len)
 {
     int rc;
     DWORD dwBytes;
 
-    if(m_eSockType != ESOCKTYPE_TCP)    return -1;
+    if(m_eSockType != ESOCKTYPE_TCP)                    return -1;
+    if(!m_lpfnAcceptEx || !m_lpfnGetAcceptExSockaddrs)  return -1;
+    if(!m_pBuf)                                         return -1;
 
     m_pAcceptSO = accept;
 
-    if(m_lpfnAcceptEx(m_Sock, m_soAccept, m_AcceptBuf, GAMENAME_LEN, sizeof(SOCKADDR_IN) + 16, sizeof(SOCKADDR_IN) + 16, &dwBytes, &m_Overlapped[EEVENT_ACCEPT]) == FALSE)
+    m_iBufLen = len;
+    m_pBuf = malloc(m_iBufLen + (sizeof(SOCKADDR_IN) + 16) * 2);
+
+    if(m_lpfnAcceptEx(m_Sock, m_pAcceptSO, buf, len, sizeof(SOCKADDR_IN) + 16, sizeof(SOCKADDR_IN) + 16, &dwBytes, &m_Overlapped[EEVENT_ACCEPT]) == FALSE)
+    {
+        rc = WSAGetLastError();
+        if(rc != WSA_IO_PENDING) return rc;
+    }
+
+    return NO_ERROR;
+}
+
+int CSockObj::PostConnectI(const sockaddr* addr, int namelen)
+{
+    int             rc;
+    DWORD           dwBytes;
+    SOCKADDR_IN     ServerAddr;
+    LPFN_CONNECTEX  lpfnConnectEx;
+
+    GUID guidConnectEx = WSAID_CONNECTEX;
+
+    m_soClient = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+    if(m_soClient == INVALID_SOCKET) return -1;
+
+    if(bind(m_soClient, (SOCKADDR*)&m_LocalBindAddr, sizeof(m_LocalBindAddr)) == SOCKET_ERROR) return WSAGetLastError();
+
+    if(WSAIoctl( m_soClient
+        , SIO_GET_EXTENSION_FUNCTION_POINTER
+        , &guidConnectEx
+        , sizeof(guidConnectEx)
+        , &lpfnConnectEx
+        , sizeof(lpfnConnectEx)
+        , &dwBytes
+        , NULL
+        , NULL ) == SOCKET_ERROR) return WSAGetLastError();
+
+    ServerAddr.sin_family   = AF_INET;
+    ServerAddr.sin_addr     = m_Server;
+    ServerAddr.sin_port     = htons(MAIN_PORT);
+
+    if(lpfnConnectEx(m_soClient, (SOCKADDR*)&ServerAddr, sizeof(ServerAddr), m_ConnectBuf, GAMENAME_LEN, &dwBytes, &m_Overlapped[EEVENT_CONNECT]) == FALSE)
     {
         rc = WSAGetLastError();
         if(rc != WSA_IO_PENDING) return rc;
