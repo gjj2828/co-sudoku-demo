@@ -18,6 +18,8 @@ public:
         EEVENT_LISTENFAIL,
         EEVENT_POSTACCEPTFAIL,
         EEVENT_POSTCONNECTFAIL,
+        EEVENT_POSTSENDFAIL,
+        EEVENT_POSTRECVTFAIL,
         EEVENT_MAX,
     };
     struct Event

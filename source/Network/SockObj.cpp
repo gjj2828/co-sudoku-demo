@@ -11,6 +11,7 @@ CSockObj::CSockObj(int id, ESockType type, INetworkEventManager* event_manager)
  , m_pAcceptSO(NULL)
  , m_pBuf(NULL)
  , m_iBufLen(0)
+ , m_bSending(false)
 {
     for(int i = 0; i < EEVENT_MAX; i++)
     {
@@ -38,12 +39,20 @@ int CSockObj::Create(ESockType type)
 void CSockObj::Close()
 {
     SAFE_CLOSESOCKET(m_Sock);
-    m_eSockType = ESOCKTYPE_UNDECIDED;
-    m_lpfnAcceptEx = NULL;
-    m_lpfnGetAcceptExSockaddrs = NULL;
+
+    m_eSockType                 = ESOCKTYPE_UNDECIDED;
+    m_lpfnAcceptEx              = NULL;
+    m_lpfnGetAcceptExSockaddrs  = NULL;
+    m_bSending                  = false;
+
+    for(int i = 0; i < m_queSend.size(); i++)
+    {
+        SAFE_DELETE(m_queSend[i]);
+    }
+    m_queSend.clear();
 }
 
-int CSockObj::Bind(const sockaddr* addr, int namelen)
+int CSockObj::Bind(SOCKADDR* addr, int namelen)
 {
     int iRetCode = BindI(addr, namelen);
     if(iRetCode != NO_ERROR) PostEvent(INetworkEventManager::EEVENT_BINDFAIL, iRetCode);
@@ -64,10 +73,24 @@ int CSockObj::PostAccept(ISockObj* accept, char* buf, int len)
     return iRetCode;
 }
 
-int CSockObj::PostConnect(const sockaddr* addr, int namelen)
+int CSockObj::PostConnect(SOCKADDR* addr, int namelen)
 {
     int iRetCode = PostConnectI(addr, namelen);
     if(iRetCode != NO_ERROR) PostEvent(INetworkEventManager::EEVENT_POSTCONNECTFAIL, iRetCode);
+    return iRetCode;
+}
+
+int CSockObj::PostSend(Packet* packet)
+{
+    int iRetCode = PostSendI(packet);
+    if(iRetCode != NO_ERROR) PostEvent(INetworkEventManager::EEVENT_POSTSENDFAIL, iRetCode);
+    return iRetCode;
+}
+
+int CSockObj::PostRecv()
+{
+    int iRetCode = PostRecvI();
+    if(iRetCode != NO_ERROR) PostEvent(INetworkEventManager::EEVENT_POSTRECVTFAIL, iRetCode);
     return iRetCode;
 }
 
@@ -99,7 +122,7 @@ int CSockObj::CreateI(ESockType type)
     return NO_ERROR;
 }
 
-int CSockObj::BindI(const sockaddr* addr, int namelen)
+int CSockObj::BindI(SOCKADDR* addr, int namelen)
 {
     if(bind(m_Sock, addr, namelen) == SOCKET_ERROR) return WSAGetLastError();
     return NO_ERROR;
@@ -150,10 +173,11 @@ int CSockObj::PostAcceptI(ISockObj* accept, char* buf, int len)
 
     m_pAcceptSO = accept;
 
-    m_iBufLen = len;
-    m_pBuf = malloc(m_iBufLen + (sizeof(SOCKADDR_IN) + 16) * 2);
+    m_pBufOrg   = buf;
+    m_iBufLen   = len;
+    m_pBuf      = malloc(m_iBufLen + (sizeof(SOCKADDR_IN) + 16) * 2);
 
-    if(m_lpfnAcceptEx(m_Sock, m_pAcceptSO, buf, len, sizeof(SOCKADDR_IN) + 16, sizeof(SOCKADDR_IN) + 16, &dwBytes, &m_Overlapped[EEVENT_ACCEPT]) == FALSE)
+    if(m_lpfnAcceptEx(m_Sock, m_pAcceptSO, m_pBuf, m_iBufLen, sizeof(SOCKADDR_IN) + 16, sizeof(SOCKADDR_IN) + 16, &dwBytes, &m_Overlapped[EEVENT_ACCEPT]) == FALSE)
     {
         rc = WSAGetLastError();
         if(rc != WSA_IO_PENDING) return rc;
@@ -162,7 +186,7 @@ int CSockObj::PostAcceptI(ISockObj* accept, char* buf, int len)
     return NO_ERROR;
 }
 
-int CSockObj::PostConnectI(const sockaddr* addr, int namelen)
+int CSockObj::PostConnectI(SOCKADDR* local_addr, int local_namelen, SOCKADDR* remote_addr, int remote_namelen, char* buf, int len)
 {
     int             rc;
     DWORD           dwBytes;
@@ -171,30 +195,34 @@ int CSockObj::PostConnectI(const sockaddr* addr, int namelen)
 
     GUID guidConnectEx = WSAID_CONNECTEX;
 
-    m_soClient = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-    if(m_soClient == INVALID_SOCKET) return -1;
+    if(m_eSockType != ESOCKTYPE_TCP)                    return -1;
 
-    if(bind(m_soClient, (SOCKADDR*)&m_LocalBindAddr, sizeof(m_LocalBindAddr)) == SOCKET_ERROR) return WSAGetLastError();
+    if(bind(m_Sock, local_addr, local_namelen) == SOCKET_ERROR) return WSAGetLastError();
 
-    if(WSAIoctl( m_soClient
-        , SIO_GET_EXTENSION_FUNCTION_POINTER
-        , &guidConnectEx
-        , sizeof(guidConnectEx)
-        , &lpfnConnectEx
-        , sizeof(lpfnConnectEx)
-        , &dwBytes
-        , NULL
-        , NULL ) == SOCKET_ERROR) return WSAGetLastError();
+    if(WSAIoctl( m_Sock
+               , SIO_GET_EXTENSION_FUNCTION_POINTER
+               , &guidConnectEx
+               , sizeof(guidConnectEx)
+               , &lpfnConnectEx
+               , sizeof(lpfnConnectEx)
+               , &dwBytes
+               , NULL
+               , NULL ) == SOCKET_ERROR) return WSAGetLastError();
 
-    ServerAddr.sin_family   = AF_INET;
-    ServerAddr.sin_addr     = m_Server;
-    ServerAddr.sin_port     = htons(MAIN_PORT);
-
-    if(lpfnConnectEx(m_soClient, (SOCKADDR*)&ServerAddr, sizeof(ServerAddr), m_ConnectBuf, GAMENAME_LEN, &dwBytes, &m_Overlapped[EEVENT_CONNECT]) == FALSE)
+    if(lpfnConnectEx(m_Sock, &remote_addr, remote_namelen, buf, len, &dwBytes, &m_Overlapped[EEVENT_CONNECT]) == FALSE)
     {
         rc = WSAGetLastError();
         if(rc != WSA_IO_PENDING) return rc;
     }
 
     return NO_ERROR;
+}
+
+int CSockObj::PostSendI(Packet* packet)
+{
+    Packet* pPacket = (Packet*)malloc(packet->size);
+    memcpy(pPacket, (char*)packet, packet->size);
+    m_queSend.push_back(pPacket);
+
+    if(m_bSending) return NO_ERROR;
 }

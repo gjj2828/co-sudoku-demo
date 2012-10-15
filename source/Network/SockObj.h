@@ -12,10 +12,10 @@ public:
 
     virtual int     Create(ESockType type);
     virtual int     GetId() {return m_iId;}
-    virtual int     Bind(const sockaddr* addr, int namelen);
+    virtual int     Bind(SOCKADDR* addr, int namelen);
     virtual int     Listen(int backlog);
     virtual int     PostAccept(ISockObj* accept, char* buf, int len);
-    virtual int     PostConnect(const sockaddr* addr, int namelen);
+    virtual int     PostConnect(SOCKADDR* remote_addr, int remote_namelen, SOCKADDR* local_addr, int local_namelen);
     virtual int     PostSend(Packet* packet);
     virtual int     PostRecv();
 
@@ -39,6 +39,8 @@ private:
     //    ETCPTYPE_MAX,
     //};
 
+    typedef std::deque<Packet*> PacketQue;
+
     int                         m_iId;
     ESockType                   m_eSockType;
     //ETcpType                    m_eTcpType;
@@ -50,13 +52,16 @@ private:
     INetworkEventManager*       m_pEventManager;
     CSockObj*                   m_pAcceptSO;
     char*                       m_pBuf;
+    char*                       m_pBufOrg;
     int                         m_iBufLen;
+    PacketQue                   m_queSend;
+    bool                        m_bSending;
 
     int     CreateI(ESockType type);
-    int     BindI(const sockaddr* addr, int namelen);
+    int     BindI(SOCKADDR* addr, int namelen);
     int     ListenI(int backlog);
     int     PostAcceptI(ISockObj* accept, char* buf, int len);
-    int     PostConnectI(const sockaddr* addr, int namelen);
+    int     PostConnectI(SOCKADDR* remote_addr, int remote_namelen, SOCKADDR* local_addr, int local_namelen);
     int     PostSendI(Packet* packet);
     int     PostRecvI();
     void    PostEvent(INetworkEventManager::EEvent event, int ret, ISockObj* accept, Packet* recv);

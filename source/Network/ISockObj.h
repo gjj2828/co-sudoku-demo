@@ -14,16 +14,16 @@ public:
         ESOCKTYPE_UDP,
         ESOCKTYPE_MAX,
     };
-    virtual int     Create(ESockType type)                              = 0;
-    virtual void    Close()                                             = 0;
-    virtual int     GetId()                                             = 0;
-    virtual int     Bind(const sockaddr* addr, int namelen)             = 0;
-    virtual int     Listen(int backlog)                                 = 0;
-    virtual int     PostAccept(ISockObj* accept, char* buf, int len)    = 0;
-    virtual int     PostConnect(const sockaddr* addr, int namelen)      = 0;
-    virtual int     PostSend(Packet* packet)                            = 0;
-    virtual int     PostRecv()                                          = 0;
-    virtual int     Update()                                            = 0;
+    virtual int     Create(ESockType type)                                                                          = 0;
+    virtual void    Close()                                                                                         = 0;
+    virtual int     GetId()                                                                                         = 0;
+    virtual int     Bind(SOCKADDR* addr, int namelen)                                                               = 0;
+    virtual int     Listen(int backlog)                                                                             = 0;
+    virtual int     PostAccept(ISockObj* accept, char* buf, int len)                                                = 0;
+    virtual int     PostConnect(SOCKADDR* remote_addr, int remote_namelen, SOCKADDR* local_addr, int local_namelen) = 0;
+    virtual int     PostSend(Packet* packet)                                                                        = 0;
+    virtual int     PostRecv()                                                                                      = 0;
+    virtual int     Update()                                                                                        = 0;
 };
 
 #endif // __ISOCKOBJ_H__
