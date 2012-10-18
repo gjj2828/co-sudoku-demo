@@ -21,7 +21,7 @@ public:
     virtual int     Listen(int backlog)                                                                             = 0;
     virtual int     PostAccept(ISockObj* accept, char* buf, int len)                                                = 0;
     virtual int     PostConnect(SOCKADDR* remote_addr, int remote_namelen, SOCKADDR* local_addr, int local_namelen) = 0;
-    virtual int     PostSend(Packet* packet)                                                                        = 0;
+    virtual int     PostSend(Packet* packet, SOCKADDR* addr = NULL, int namelen = 0)                                = 0;
     virtual int     PostRecv()                                                                                      = 0;
     virtual int     Update()                                                                                        = 0;
 };

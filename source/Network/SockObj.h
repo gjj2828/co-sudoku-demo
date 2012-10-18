@@ -16,7 +16,7 @@ public:
     virtual int     Listen(int backlog);
     virtual int     PostAccept(ISockObj* accept, char* buf, int len);
     virtual int     PostConnect(SOCKADDR* remote_addr, int remote_namelen, SOCKADDR* local_addr, int local_namelen);
-    virtual int     PostSend(Packet* packet);
+    virtual int     PostSend(Packet* packet, SOCKADDR* addr, int namelen);
     virtual int     PostRecv();
 
 private:
@@ -28,6 +28,13 @@ private:
         EEVENT_SEND,
         EEVENT_RECV,
         EEVENT_MAX,
+    };
+    enum ERecvStep
+    {
+        ERECVSTEP_MIN,
+        ERECVSTEP_SIZE = ERECVSTEP_MIN,
+        ERECVSTEP_PACKET,
+        ERECVSTEP_MAX,
     };
     //enum ETcpType
     //{
@@ -51,20 +58,25 @@ private:
     LPFN_GETACCEPTEXSOCKADDRS   m_lpfnGetAcceptExSockaddrs;
     INetworkEventManager*       m_pEventManager;
     CSockObj*                   m_pAcceptSO;
-    char*                       m_pBuf;
-    char*                       m_pBufOrg;
-    int                         m_iBufLen;
-    PacketQue                   m_queSend;
+    char*                       m_pAcceptBuf;
+    char*                       m_pAcceptBufOrg;
+    int                         m_iAcceptBufLen;
+    PacketQue                   m_queSendPacket;
     bool                        m_bSending;
+    ERecvStep                   m_eRecvStep;
+    int                         m_iOffset;
+    psize_t                     m_iSize;
+    Packet*                     m_pRecvPacket;
 
-    int     CreateI(ESockType type);
-    int     BindI(SOCKADDR* addr, int namelen);
-    int     ListenI(int backlog);
-    int     PostAcceptI(ISockObj* accept, char* buf, int len);
-    int     PostConnectI(SOCKADDR* remote_addr, int remote_namelen, SOCKADDR* local_addr, int local_namelen);
-    int     PostSendI(Packet* packet);
-    int     PostRecvI();
-    void    PostEvent(INetworkEventManager::EEvent event, int ret, ISockObj* accept, Packet* recv);
+    int CreateI(ESockType type);
+    int BindI(SOCKADDR* addr, int namelen);
+    int ListenI(int backlog);
+    int PostAcceptI(ISockObj* accept, char* buf, int len);
+    int PostConnectI(SOCKADDR* remote_addr, int remote_namelen, SOCKADDR* local_addr, int local_namelen);
+    int PostSend(SOCKADDR* addr, int namelen);
+    int PostSendI(SOCKADDR* addr, int namelen);
+    int PostRecvI();
+    int PostEvent(INetworkEventManager::EEvent event, int ret, ISockObj* accept, Packet* recv);
 };
 
 #endif // __SOCKOBJ_H__
