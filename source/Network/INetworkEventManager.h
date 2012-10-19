@@ -20,6 +20,7 @@ public:
         EEVENT_POSTCONNECTFAIL,
         EEVENT_POSTSENDFAIL,
         EEVENT_POSTRECVTFAIL,
+        EEVENT_CLOSE,
         EEVENT_MAX,
     };
     struct Event

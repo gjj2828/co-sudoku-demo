@@ -10,14 +10,15 @@ public:
     CSockObj(int id, INetworkEventManager* event_manager);
     ~CSockObj();
 
-    virtual int     Create(ESockType type);
-    virtual int     GetId() {return m_iId;}
-    virtual int     Bind(SOCKADDR* addr, int namelen);
-    virtual int     Listen(int backlog);
-    virtual int     PostAccept(ISockObj* accept, char* buf, int len);
-    virtual int     PostConnect(SOCKADDR* remote_addr, int remote_namelen, SOCKADDR* local_addr, int local_namelen);
-    virtual int     PostSend(Packet* packet, SOCKADDR* addr, int namelen);
-    virtual int     PostRecv();
+    virtual int Create(ESockType type);
+    virtual int GetId() {return m_iId;}
+    virtual int Bind(SOCKADDR* addr, int namelen);
+    virtual int Listen(int backlog);
+    virtual int PostAccept(ISockObj* accept, char* buf, int len);
+    virtual int PostConnect(SOCKADDR* remote_addr, int remote_namelen, SOCKADDR* local_addr, int local_namelen, char* buf, int len);
+    virtual int PostSend(Packet* packet, SOCKADDR* addr, int namelen);
+    virtual int PostRecv();
+    virtual int Update();
 
 private:
     enum EEvent
@@ -46,7 +47,16 @@ private:
     //    ETCPTYPE_MAX,
     //};
 
-    typedef std::deque<Packet*> PacketQue;
+    struct SendData
+    {
+        SendData() : packet(NULL), namelen(0) {}
+        ~SendData() {SAFE_DELETE(packet);}
+        Packet*     packet;
+        SOCKADDR    addr;
+        int         namelen;
+    };
+
+    typedef std::deque<SendData*> SendDataQue;
 
     int                         m_iId;
     ESockType                   m_eSockType;
@@ -61,22 +71,15 @@ private:
     char*                       m_pAcceptBuf;
     char*                       m_pAcceptBufOrg;
     int                         m_iAcceptBufLen;
-    PacketQue                   m_queSendPacket;
+    SendDataQue                 m_queSendData;
     bool                        m_bSending;
     ERecvStep                   m_eRecvStep;
     int                         m_iOffset;
     psize_t                     m_iSize;
     Packet*                     m_pRecvPacket;
 
-    int CreateI(ESockType type);
-    int BindI(SOCKADDR* addr, int namelen);
-    int ListenI(int backlog);
-    int PostAcceptI(ISockObj* accept, char* buf, int len);
-    int PostConnectI(SOCKADDR* remote_addr, int remote_namelen, SOCKADDR* local_addr, int local_namelen);
-    int PostSend(SOCKADDR* addr, int namelen);
-    int PostSendI(SOCKADDR* addr, int namelen);
-    int PostRecvI();
-    int PostEvent(INetworkEventManager::EEvent event, int ret, ISockObj* accept, Packet* recv);
+    int PostSend();
+    int PostEvent(INetworkEventManager::EEvent, int ret, ISockObj* accept, Packet* recv);
 };
 
 #endif // __SOCKOBJ_H__
