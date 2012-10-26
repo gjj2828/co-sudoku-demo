@@ -67,7 +67,6 @@ private:
     LPFN_ACCEPTEX               m_lpfnAcceptEx;
     LPFN_GETACCEPTEXSOCKADDRS   m_lpfnGetAcceptExSockaddrs;
     INetworkEventManager*       m_pEventManager;
-    CSockObj*                   m_pAcceptSO;
     char*                       m_pAcceptBuf;
     char*                       m_pAcceptBufOrg;
     int                         m_iAcceptBufLen;
@@ -78,8 +77,15 @@ private:
     psize_t                     m_iSize;
     Packet*                     m_pRecvPacket;
 
+	SOCKET GetSocket() {return m_Sock;}
+
     int PostSend();
-    int PostEvent(INetworkEventManager::EEvent, int ret, ISockObj* accept, Packet* recv);
+    int PostEvent(INetworkEventManager::EEvent event, int ret = NO_ERROR, ISockObj* accept = NULL, Packet* recv = NULL);
+
+	int OnAccept();
+	int OnConnect();
+	int OnSend();
+	int OnRecv();
 };
 
 #endif // __SOCKOBJ_H__

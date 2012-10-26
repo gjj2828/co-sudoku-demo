@@ -123,13 +123,11 @@ int CSockObj::PostAccept(ISockObj* accept, char* buf, int len)
     if(!m_lpfnAcceptEx || !m_lpfnGetAcceptExSockaddrs)  POSTEVENT_RTN(EEVENT_POSTACCEPTFAIL, -1);
     if(!m_pAcceptBuf)                                   POSTEVENT_RTN(EEVENT_POSTACCEPTFAIL, -1);
 
-    m_pAcceptSO = accept;
-
     m_pAcceptBufOrg   = buf;
     m_iAcceptBufLen   = len;
     m_pAcceptBuf      = malloc(m_iAcceptBufLen + (sizeof(SOCKADDR) + 16) * 2);
 
-    if(m_lpfnAcceptEx(m_Sock, m_pAcceptSO, m_pAcceptBuf, m_iAcceptBufLen, sizeof(SOCKADDR) + 16, sizeof(SOCKADDR) + 16, &dwBytes, &m_Overlapped[EEVENT_ACCEPT]) == FALSE)
+    if(m_lpfnAcceptEx(m_Sock, accept->GetSocket(), m_pAcceptBuf, m_iAcceptBufLen, sizeof(SOCKADDR) + 16, sizeof(SOCKADDR) + 16, &dwBytes, &m_Overlapped[EEVENT_ACCEPT]) == FALSE)
     {
         rc = WSAGetLastError();
         if(rc != WSA_IO_PENDING) POSTEVENT_RTN(EEVENT_POSTACCEPTFAIL, rc);
@@ -255,6 +253,17 @@ int CSockObj::Update()
 
     if(rc == WAIT_TIMEOUT) return NO_ERROR;
     if(rc == FAILED) return rc;
+
+	if(rc != WAIT_TIMEOUT)
+	{
+		rc = WaitForSingleObject(m_hEvents[EEVENT_ACCEPT], 0);
+		if(rc == FAILED) return rc;
+		if(rc == WAIT_OBJECT_0)
+		{
+			rc = OnAccept();
+			if(rc != NO_ERROR) return rc;
+		}
+	}
 }
 
 int CSockObj::PostSend()
@@ -301,4 +310,84 @@ int CSockObj::PostSend()
     if(m_queSendData.size() > 0) m_bSending = true;
 
     return NO_ERROR;
+}
+
+int CSockObj::PostEvent(INetworkEventManager::EEvent event, int ret, ISockObj* accept, Packet* recv)
+{
+	INetworkEventManager::Event evt;
+
+	evt.pSockObj	= this;
+	evt.eEvent		= event;
+	evt.pAccept		= accept;
+	evt.pRecv		= recv;
+	evt.iRetCode	= ret;
+
+	return m_pEventManager->HandleEvent(evt);
+}
+
+int CSockObj::OnAccept()
+{
+	int rc;
+	DWORD dwBytes, dwFlags;
+
+	WSAResetEvent(m_hEvents[EEVENT_ACCEPT]);
+
+	if(WSAGetOverlappedResult(m_Sock, &m_Overlapped[EEVENT_ACCEPT], &dwBytes, false, &dwFlags))
+	{
+
+	}
+	else
+	{
+		PostEvent(INetworkEventManager::EEVENT_ONCONNECTFAIL, WSAGetLastError());
+	}
+
+	m_pAcceptBufOrg = NULL;
+	m_iAcceptBufLen = 0;
+	SAFE_DELETE(m_pAcceptBuf);
+
+	bool bFound;
+	int empty;
+
+	bFound = FindEmptyCoClient(empty);
+
+	if(rc == TRUE && bFound)
+	{
+		m_CoClientData[empty].s = m_soAccept;
+		m_soAccept = INVALID_SOCKET;
+
+		bool bSuccess = false;
+
+		SOCKADDR*   LocalSockaddr;
+		SOCKADDR*   RemoteSockaddr;
+		int         LocalSockaddrLen;
+		int         RemoteSockaddrLen;
+		m_lpfnGetAcceptExSockaddrs( m_AcceptBuf, sizeof(m_AcceptBuf) - (sizeof(SOCKADDR_IN) + 16) * 2, sizeof(SOCKADDR_IN) + 16, sizeof(SOCKADDR_IN) + 16
+			, (SOCKADDR **)&LocalSockaddr, &LocalSockaddrLen, (SOCKADDR **)&RemoteSockaddr, &RemoteSockaddrLen );
+		if(m_eState == ESTATE_WAITING || (m_eState == ESTATE_PAIRED && m_bHost == true))
+		{
+			if(strcmp(m_AcceptBuf, GAME_NAME) == 0)
+			{
+				if(PostHostRecv(empty) == NO_ERROR)
+				{
+					if(m_eState == ESTATE_WAITING)
+					{
+						m_eState = ESTATE_PAIRED;
+						m_bHost = true;
+					}
+					bSuccess = true;
+					m_iCoClientNum++;
+				}
+			}
+		}
+
+		if(bSuccess) SAFE_CLOSESOCKET(m_CoClientData[empty].s);
+	}
+	else
+	{
+		SAFE_CLOSESOCKET(m_soAccept);
+	}
+
+	if(PostAccept() != NO_ERROR) return 0;
+
+	return 1;
 }

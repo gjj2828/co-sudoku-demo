@@ -24,6 +24,9 @@ public:
     virtual int     PostSend(Packet* packet, SOCKADDR* addr = NULL, int namelen = 0)                                                    = 0;
     virtual int     PostRecv()                                                                                                          = 0;
     virtual int     Update()                                                                                                            = 0;
+
+protected:
+	virtual SOCKET GetSocket() = 0;
 };
 
 #endif // __ISOCKOBJ_H__

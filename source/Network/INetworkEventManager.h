@@ -20,7 +20,10 @@ public:
         EEVENT_POSTCONNECTFAIL,
         EEVENT_POSTSENDFAIL,
         EEVENT_POSTRECVTFAIL,
-        EEVENT_CLOSE,
+        EEVENT_ONACCEPTFAIL,
+		EEVENT_ONCONNECTFAIL,
+		EEVENT_ONSENDFAIL,
+		EEVENT_ONRECVFAIL,
         EEVENT_MAX,
     };
     struct Event
@@ -31,7 +34,7 @@ public:
         Packet*     pRecv;
         int         iRetCode;
     };
-    virtual int HandleEvent(Event event) = 0;
+    virtual int HandleEvent(const Event& event) = 0;
 };
 
 #endif // __INETWORKEVENTMANAGER_H__
