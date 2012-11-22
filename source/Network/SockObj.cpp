@@ -1,13 +1,6 @@
 #include "StdAfx.h"
 #include "SockObj.h"
 
-#define POSTEVENT_RTN(event, rc)                    \
-{                                                   \
-    int _rc = (rc);                                 \
-    PostEvent(INetworkEventManager::event, _rc);    \
-    return _rc;                                     \
-}
-
 CSockObj::CSockObj(int id, ESockType type, INetworkEventManager* event_manager)
  : m_iId(id)
  , m_eSockType(ESOCKTYPE_UNDECIDED)
@@ -15,7 +8,6 @@ CSockObj::CSockObj(int id, ESockType type, INetworkEventManager* event_manager)
  , m_lpfnAcceptEx(NULL)
  , m_lpfnGetAcceptExSockaddrs(NULL)
  , m_pEventManager(event_manager)
- , m_pAcceptSO(NULL)
  , m_pAcceptBuf(NULL)
  , m_pAcceptBufOrg(NULL)
  , m_iAcceptBufLen(0)
@@ -30,22 +22,38 @@ CSockObj::CSockObj(int id, ESockType type, INetworkEventManager* event_manager)
         m_Overlapped[i].hEvent = WSACreateEvent();
         m_hEvents[i] = m_Overlapped[i].hEvent;
     }
+    m_pEventFunc[EEVENT_ACCEPT] = CSockObj::OnAccept;
+    m_pEventFunc[EEVENT_CONNECT] = CSockObj::OnConnect;
+    m_pEventFunc[EEVENT_SEND] = CSockObj::OnSend;
+    m_pEventFunc[EEVENT_RECV] = CSockObj::OnRecv;
 }
 
 CSockObj::~CSockObj()
 {
     Close();
-    for(int i = 0; i < EEVENT_MAX; i++)
-    {
-        WSACloseEvent(m_hEvents[i])
-    }
 }
 
 int CSockObj::Create(ESockType type)
 {
-    int iRetCode = CreateI(type);
-    if(iRetCode != NO_ERROR) PostEvent(INetworkEventManager::EEVENT_CREATEFAIL, iRetCode);
-    return iRetCode;
+    if(m_eSockType != ESOCKTYPE_UNDECIDED) return PostEvent(INetworkEventManager::EEVENT_CREATEFAIL, -1);
+
+    switch(type)
+    {
+    case ESOCKTYPE_TCP:
+        m_Sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+        if(m_Sock == INVALID_SOCKET) return PostEvent(INetworkEventManager::EEVENT_CREATEFAIL, -1);
+        break;
+    case ESOCKTYPE_UDP:
+        m_Sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+        if(m_Sock == INVALID_SOCKET) return PostEvent(INetworkEventManager::EEVENT_CREATEFAIL, -1);
+        break;
+    default:
+        assert(0);
+        return PostEvent(INetworkEventManager::EEVENT_CREATEFAIL, -1);
+    }
+    m_eSockType = type;
+
+    return NO_ERROR;
 }
 
 void CSockObj::Close()
@@ -56,14 +64,14 @@ void CSockObj::Close()
     m_lpfnAcceptEx              = NULL;
     m_lpfnGetAcceptExSockaddrs  = NULL;
     m_pEventManager             = NULL;
-    m_pAcceptSO                 = NULL;
-    m_pAcceptBuf                = NULL;
     m_pAcceptBufOrg             = NULL;
     m_iAcceptBufLen             = 0;
     m_bSending                  = false;
     m_eRecvStep                 = ERECVSTEP_MIN;
     m_iOffset                   = 0;
     m_iSize                     = 0;
+
+    SAFE_FREE(m_pAcceptBuf);
 
     for(int i = 0; i < m_queSendData.size(); i++)
     {
@@ -72,11 +80,16 @@ void CSockObj::Close()
     m_queSendData.clear();
 
     SAFE_DELETE(m_pRecvPacket);
+
+    for(int i = 0; i < EEVENT_MAX; i++)
+    {
+        WSAResetEvent(m_hEvents[i]);
+    }
 }
 
 int CSockObj::Bind(SOCKADDR* addr, int namelen)
 {
-    if(bind(m_Sock, addr, namelen) == SOCKET_ERROR) POSTEVENT_RTN(EEVENT_BINDFAIL, WSAGetLastError());
+    if(bind(m_Sock, addr, namelen) == SOCKET_ERROR) return PostEvent(INetworkEventManager::EEVENT_BINDFAIL, WSAGetLastError());
     return NO_ERROR;
 }
 
@@ -87,9 +100,9 @@ int CSockObj::Listen(int backlog)
     GUID guidAcceptEx = WSAID_ACCEPTEX;
     GUID guidGetAcceptExSockaddrs = WSAID_GETACCEPTEXSOCKADDRS;
 
-    if(m_eSockType != ESOCKTYPE_TCP) POSTEVENT_RTN(EEVENT_LISTENFAIL, -1);
+    if(m_eSockType != ESOCKTYPE_TCP) return PostEvent(INetworkEventManager::EEVENT_LISTENFAIL, -1);
 
-    if(listen(m_Sock, backlog) == SOCKET_ERROR) POSTEVENT_RTN(EEVENT_LISTENFAIL, WSAGetLastError());
+    if(listen(m_Sock, backlog) == SOCKET_ERROR) return PostEvent(INetworkEventManager::EEVENT_LISTENFAIL, WSAGetLastError());
 
     if(WSAIoctl( m_Sock
         , SIO_GET_EXTENSION_FUNCTION_POINTER
@@ -99,7 +112,7 @@ int CSockObj::Listen(int backlog)
         , sizeof(m_lpfnAcceptEx)
         , &dwBytes
         , NULL
-        , NULL ) == SOCKET_ERROR) POSTEVENT_RTN(EEVENT_LISTENFAIL, WSAGetLastError());
+        , NULL ) == SOCKET_ERROR) return PostEvent(INetworkEventManager::EEVENT_LISTENFAIL, WSAGetLastError());
 
     if(WSAIoctl( m_Sock
         , SIO_GET_EXTENSION_FUNCTION_POINTER
@@ -109,7 +122,7 @@ int CSockObj::Listen(int backlog)
         , sizeof(m_lpfnGetAcceptExSockaddrs)
         , &dwBytes
         , NULL
-        , NULL ) == SOCKET_ERROR) POSTEVENT_RTN(EEVENT_LISTENFAIL, WSAGetLastError());
+        , NULL ) == SOCKET_ERROR) return PostEvent(INetworkEventManager::EEVENT_LISTENFAIL, WSAGetLastError());
 
     return NO_ERROR;
 }
@@ -119,9 +132,9 @@ int CSockObj::PostAccept(ISockObj* accept, char* buf, int len)
     int rc;
     DWORD dwBytes;
 
-    if(m_eSockType != ESOCKTYPE_TCP)                    POSTEVENT_RTN(EEVENT_POSTACCEPTFAIL, -1);
-    if(!m_lpfnAcceptEx || !m_lpfnGetAcceptExSockaddrs)  POSTEVENT_RTN(EEVENT_POSTACCEPTFAIL, -1);
-    if(!m_pAcceptBuf)                                   POSTEVENT_RTN(EEVENT_POSTACCEPTFAIL, -1);
+    if(m_eSockType != ESOCKTYPE_TCP)                    return PostEvent(INetworkEventManager::EEVENT_POSTACCEPTFAIL, -1);
+    if(!m_lpfnAcceptEx || !m_lpfnGetAcceptExSockaddrs)  return PostEvent(INetworkEventManager::EEVENT_POSTACCEPTFAIL, -1);
+    if(!m_pAcceptBuf)                                   return PostEvent(INetworkEventManager::EEVENT_POSTACCEPTFAIL, -1);
 
     m_pAcceptBufOrg   = buf;
     m_iAcceptBufLen   = len;
@@ -130,7 +143,7 @@ int CSockObj::PostAccept(ISockObj* accept, char* buf, int len)
     if(m_lpfnAcceptEx(m_Sock, accept->GetSocket(), m_pAcceptBuf, m_iAcceptBufLen, sizeof(SOCKADDR) + 16, sizeof(SOCKADDR) + 16, &dwBytes, &m_Overlapped[EEVENT_ACCEPT]) == FALSE)
     {
         rc = WSAGetLastError();
-        if(rc != WSA_IO_PENDING) POSTEVENT_RTN(EEVENT_POSTACCEPTFAIL, rc);
+        if(rc != WSA_IO_PENDING) return PostEvent(INetworkEventManager::EEVENT_POSTACCEPTFAIL, rc);
     }
 
     return NO_ERROR;
@@ -144,9 +157,9 @@ int CSockObj::PostConnect(SOCKADDR* remote_addr, int remote_namelen, SOCKADDR* l
 
     GUID guidConnectEx = WSAID_CONNECTEX;
 
-    if(m_eSockType != ESOCKTYPE_TCP) POSTEVENT_RTN(EEVENT_POSTCONNECTFAIL, -1);
+    if(m_eSockType != ESOCKTYPE_TCP) return PostEvent(INetworkEventManager::EEVENT_POSTCONNECTFAIL, -1);
 
-    if(bind(m_Sock, local_addr, local_namelen) == SOCKET_ERROR) POSTEVENT_RTN(EEVENT_POSTCONNECTFAIL, WSAGetLastError());
+    if(bind(m_Sock, local_addr, local_namelen) == SOCKET_ERROR) return PostEvent(INetworkEventManager::EEVENT_POSTCONNECTFAIL, WSAGetLastError());
 
     if( WSAIoctl( m_Sock
         , SIO_GET_EXTENSION_FUNCTION_POINTER
@@ -156,12 +169,12 @@ int CSockObj::PostConnect(SOCKADDR* remote_addr, int remote_namelen, SOCKADDR* l
         , sizeof(lpfnConnectEx)
         , &dwBytes
         , NULL
-        , NULL ) == SOCKET_ERROR) POSTEVENT_RTN(EEVENT_POSTCONNECTFAIL, WSAGetLastError());
+        , NULL ) == SOCKET_ERROR) return PostEvent(INetworkEventManager::EEVENT_POSTCONNECTFAIL, WSAGetLastError());
 
     if(lpfnConnectEx(m_Sock, &remote_addr, remote_namelen, buf, len, &dwBytes, &m_Overlapped[EEVENT_CONNECT]) == FALSE)
     {
         rc = WSAGetLastError();
-        if(rc != WSA_IO_PENDING) POSTEVENT_RTN(EEVENT_POSTCONNECTFAIL, rc);
+        if(rc != WSA_IO_PENDING) return PostEvent(INetworkEventManager::EEVENT_POSTCONNECTFAIL, rc);
     }
 
     return NO_ERROR;
@@ -206,13 +219,13 @@ int CSockObj::PostRecv()
         if(rc == SOCKET_ERROR)
         {
             rc = WSAGetLastError();
-            if(rc != WSA_IO_PENDING) POSTEVENT_RTN(EEVENT_POSTRECVTFAIL, rc);
+            if(rc != WSA_IO_PENDING) return PostEvent(INetworkEventManager::EEVENT_POSTRECVTFAIL, rc);
             break;
         }
 
         WSAResetEvent(m_Overlapped[EEVENT_SEND].hEvent);
 
-        if(dwBytes == 0) POSTEVENT_RTN(EEVENT_CLOSE, NO_ERROR);
+        if(dwBytes == 0) return PostEvent(INetworkEventManager::EEVENT_CLOSE, NO_ERROR);
 
         m_iOffset += dwBytes;
         switch(m_eRecvStep)
@@ -221,7 +234,7 @@ int CSockObj::PostRecv()
             assert(m_iOffset <= sizeof(psize_t));
             if(m_iOffset == sizeof(psize_t))
             {
-                if(m_pRecvPacket) POSTEVENT_RTN(EEVENT_POSTRECVTFAIL, -1);
+                if(m_pRecvPacket) return PostEvent(INetworkEventManager::EEVENT_POSTRECVTFAIL, -1);
                 m_pRecvPacket = malloc(m_iSize);
                 m_pRecvPacket->size = m_iSize;
                 m_eRecvStep = ERECVSTEP_PACKET;
@@ -256,19 +269,22 @@ int CSockObj::Update()
 
 	if(rc != WAIT_TIMEOUT)
 	{
-		rc = WaitForSingleObject(m_hEvents[EEVENT_ACCEPT], 0);
-		if(rc == FAILED) return rc;
-		if(rc == WAIT_OBJECT_0)
-		{
-			rc = OnAccept();
-			if(rc != NO_ERROR) return rc;
-		}
+        for(int i = 0; i < EEVENT_MAX; i++)
+        {
+            rc = WaitForSingleObject(m_hEvents[i], 0);
+            if(rc == FAILED) return rc;
+            if(rc == WAIT_OBJECT_0)
+            {
+                rc = this->m_pEventFunc[i]();
+                if(rc != NO_ERROR) return rc;
+            }
+        }
 	}
 }
 
 int CSockObj::PostSend()
 {
-    if(m_eSockType == ESOCKTYPE_UNDECIDED) POSTEVENT_RTN(EEVENT_POSTSENDFAIL, -1);
+    if(m_eSockType == ESOCKTYPE_UNDECIDED) return PostEvent(INetworkEventManager::EEVENT_POSTSENDFAIL, -1);
     if(m_bSending) return NO_ERROR;
 
     WSABUF  buf;
@@ -292,13 +308,13 @@ int CSockObj::PostSend()
             break;
         default:
             assert(0);
-            POSTEVENT_RTN(EEVENT_POSTSENDFAIL, -1);
+            return PostEvent(INetworkEventManager::EEVENT_POSTSENDFAIL, -1);
         }
 
         if(rc == SOCKET_ERROR)
         {
             rc = WSAGetLastError();
-            if(rc != WSA_IO_PENDING) POSTEVENT_RTN(EEVENT_POSTSENDFAIL, rc);
+            if(rc != WSA_IO_PENDING) return PostEvent(INetworkEventManager::EEVENT_POSTSENDFAIL, rc);
             break;
         }
 
@@ -312,13 +328,14 @@ int CSockObj::PostSend()
     return NO_ERROR;
 }
 
-int CSockObj::PostEvent(INetworkEventManager::EEvent event, int ret, ISockObj* accept, Packet* recv)
+int CSockObj::PostEvent(INetworkEventManager::EEvent event, int ret, SOCKADDR* local, SOCKADDR* remote, Packet* recv)
 {
 	INetworkEventManager::Event evt;
 
 	evt.pSockObj	= this;
 	evt.eEvent		= event;
-	evt.pAccept		= accept;
+	evt.pLocalAddr	= local;
+    evt.pRemoteAddr	= remote;
 	evt.pRecv		= recv;
 	evt.iRetCode	= ret;
 
@@ -332,62 +349,41 @@ int CSockObj::OnAccept()
 
 	WSAResetEvent(m_hEvents[EEVENT_ACCEPT]);
 
-	if(WSAGetOverlappedResult(m_Sock, &m_Overlapped[EEVENT_ACCEPT], &dwBytes, false, &dwFlags))
+	if(WSAGetOverlappedResult(m_Sock, &m_Overlapped[EEVENT_ACCEPT], &dwBytes, false, &dwFlags) == TRUE)
 	{
-
+        if(m_iAcceptBufLen > 0)
+        {
+            memcpy(m_pAcceptBufOrg, m_pAcceptBuf, m_iAcceptBufLen);
+        }
+        SOCKADDR*   pLocalAddr;
+        SOCKADDR*   pRemoteAddr;
+        int         iLocalAddrLen;
+        int         iRemoteAddrLen;
+        m_lpfnGetAcceptExSockaddrs( m_pAcceptBuf, sizeof(m_pAcceptBuf) - (sizeof(SOCKADDR) + 16) * 2, sizeof(SOCKADDR) + 16, sizeof(SOCKADDR) + 16
+                                  , (SOCKADDR **)&pLocalAddr, &iLocalAddrLen, (SOCKADDR **)&pRemoteAddr, &iRemoteAddrLen );
+        rc = PostEvent(INetworkEventManager::EEVENT_ACCEPT, NO_ERROR, pLocalAddr, pRemoteAddr);
 	}
 	else
 	{
-		PostEvent(INetworkEventManager::EEVENT_ONCONNECTFAIL, WSAGetLastError());
+		rc = PostEvent(INetworkEventManager::EEVENT_ONACCEPTFAIL, WSAGetLastError());
 	}
 
-	m_pAcceptBufOrg = NULL;
-	m_iAcceptBufLen = 0;
-	SAFE_DELETE(m_pAcceptBuf);
+    SAFE_FREE(m_pAcceptBuf);
 
-	bool bFound;
-	int empty;
+    return rc;
+}
 
-	bFound = FindEmptyCoClient(empty);
+int CSockObj::OnConnect()
+{
+    int rc;
+    DWORD dwBytes, dwFlags;
 
-	if(rc == TRUE && bFound)
-	{
-		m_CoClientData[empty].s = m_soAccept;
-		m_soAccept = INVALID_SOCKET;
+    WSAResetEvent(m_hEvents[EEVENT_CONNECT]);
 
-		bool bSuccess = false;
+    if(WSAGetOverlappedResult(m_Sock, &m_Overlapped[EEVENT_CONNECT], &dwBytes, false, &dwFlags) == FALSE) return PostEvent(INetworkEventManager::EEVENT_ONACCEPTFAIL, WSAGetLastError());
 
-		SOCKADDR*   LocalSockaddr;
-		SOCKADDR*   RemoteSockaddr;
-		int         LocalSockaddrLen;
-		int         RemoteSockaddrLen;
-		m_lpfnGetAcceptExSockaddrs( m_AcceptBuf, sizeof(m_AcceptBuf) - (sizeof(SOCKADDR_IN) + 16) * 2, sizeof(SOCKADDR_IN) + 16, sizeof(SOCKADDR_IN) + 16
-			, (SOCKADDR **)&LocalSockaddr, &LocalSockaddrLen, (SOCKADDR **)&RemoteSockaddr, &RemoteSockaddrLen );
-		if(m_eState == ESTATE_WAITING || (m_eState == ESTATE_PAIRED && m_bHost == true))
-		{
-			if(strcmp(m_AcceptBuf, GAME_NAME) == 0)
-			{
-				if(PostHostRecv(empty) == NO_ERROR)
-				{
-					if(m_eState == ESTATE_WAITING)
-					{
-						m_eState = ESTATE_PAIRED;
-						m_bHost = true;
-					}
-					bSuccess = true;
-					m_iCoClientNum++;
-				}
-			}
-		}
+    int opval = 1;
+    if(setsockopt(m_Sock, SOL_SOCKET, SO_UPDATE_CONNECT_CONTEXT, (char*)&opval, sizeof(opval)) != SOCKET_ERROR) return PostEvent(INetworkEventManager::EEVENT_ONACCEPTFAIL, WSAGetLastError());
 
-		if(bSuccess) SAFE_CLOSESOCKET(m_CoClientData[empty].s);
-	}
-	else
-	{
-		SAFE_CLOSESOCKET(m_soAccept);
-	}
-
-	if(PostAccept() != NO_ERROR) return 0;
-
-	return 1;
+    return PostEvent(INetworkEventManager::EEVENT_CONNECT, NO_ERROR);
 }

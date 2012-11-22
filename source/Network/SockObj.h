@@ -57,6 +57,7 @@ private:
     };
 
     typedef std::deque<SendData*> SendDataQue;
+    typedef int (CSockObj::*EventFunc)();
 
     int                         m_iId;
     ESockType                   m_eSockType;
@@ -76,11 +77,12 @@ private:
     int                         m_iOffset;
     psize_t                     m_iSize;
     Packet*                     m_pRecvPacket;
+    EventFunc                   m_pEventFunc[EEVENT_MAX];
 
 	SOCKET GetSocket() {return m_Sock;}
 
     int PostSend();
-    int PostEvent(INetworkEventManager::EEvent event, int ret = NO_ERROR, ISockObj* accept = NULL, Packet* recv = NULL);
+    int PostEvent(INetworkEventManager::EEvent event, int ret = NO_ERROR, SOCKADDR* local = NULL, SOCKADDR* remote = NULL, Packet* recv = NULL);
 
 	int OnAccept();
 	int OnConnect();

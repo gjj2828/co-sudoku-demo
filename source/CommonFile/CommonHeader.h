@@ -83,6 +83,12 @@ enum
     (p) = NULL;         \
 }
 
+#define SAFE_FREE(p)  \
+{                       \
+    if(p) free(p);   \
+    (p) = NULL;         \
+}
+
 #define SAFE_FREELIBRARY(p) \
 {                           \
     if(p) FreeLibrary(p);   \

@@ -30,7 +30,8 @@ public:
     {
         ISockObj*   pSockObj;
         EEvent      eEvent;
-        ISockObj*   pAccept;
+        SOCKADDR*   pLocalAddr;
+        SOCKADDR*   pRemoteAddr;
         Packet*     pRecv;
         int         iRetCode;
     };
