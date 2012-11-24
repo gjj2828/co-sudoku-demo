@@ -12,6 +12,7 @@ CSockObj::CSockObj(int id, ESockType type, INetworkEventManager* event_manager)
  , m_pAcceptBufOrg(NULL)
  , m_iAcceptBufLen(0)
  , m_bSending(false)
+ , m_bRecving(false)
  , m_eRecvStep(ERECVSTEP_MIN)
  , m_iOffset(0)
  , m_iSize(0)
@@ -67,6 +68,7 @@ void CSockObj::Close()
     m_pAcceptBufOrg             = NULL;
     m_iAcceptBufLen             = 0;
     m_bSending                  = false;
+    m_bRecving                  = false;
     m_eRecvStep                 = ERECVSTEP_MIN;
     m_iOffset                   = 0;
     m_iSize                     = 0;
@@ -197,63 +199,166 @@ int CSockObj::PostSend(Packet* packet, SOCKADDR* addr, int namelen)
 int CSockObj::PostRecv()
 {
     WSABUF  buf;
-    int     rc;
     DWORD   dwBytes, dwFlags;
 
-    while(1)
+    int rc = NO_ERROR;
+
+    if(!m_bRecving) return NO_ERROR;
+
+    m_bRecving = true;
+
+    switch(m_eSockType)
     {
-        switch(m_eRecvStep)
+    case ESOCKTYPE_TCP:
+        while(1)
         {
-        case ERECVSTEP_SIZE:
-            buf.buf = (char*)&m_iSize + m_iOffset;
-            buf.len = sizeof(psize_t) - m_iOffset;
-            break;
-        case ERECVSTEP_PACKET:
-            buf.buf = (char*)m_pRecvPacket + m_iOffset;
-            buf.len = m_pRecvPacket->size - m_iOffset;
-            break;
-        }
-
-        dwFlags = 0;
-        rc = WSARecv(m_Sock, &buf, 1, &dwBytes, &dwFlags, &m_Overlapped[EEVENT_RECV], NULL);
-        if(rc == SOCKET_ERROR)
-        {
-            rc = WSAGetLastError();
-            if(rc != WSA_IO_PENDING) return PostEvent(INetworkEventManager::EEVENT_POSTRECVTFAIL, rc);
-            break;
-        }
-
-        WSAResetEvent(m_Overlapped[EEVENT_SEND].hEvent);
-
-        if(dwBytes == 0) return PostEvent(INetworkEventManager::EEVENT_CLOSE, NO_ERROR);
-
-        m_iOffset += dwBytes;
-        switch(m_eRecvStep)
-        {
-        case ERECVSTEP_SIZE:
-            assert(m_iOffset <= sizeof(psize_t));
-            if(m_iOffset == sizeof(psize_t))
+            switch(m_eRecvStep)
             {
-                if(m_pRecvPacket) return PostEvent(INetworkEventManager::EEVENT_POSTRECVTFAIL, -1);
-                m_pRecvPacket = malloc(m_iSize);
-                m_pRecvPacket->size = m_iSize;
-                m_eRecvStep = ERECVSTEP_PACKET;
+            case ERECVSTEP_SIZE:
+                buf.buf = (char*)&m_iSize + m_iOffset;
+                buf.len = sizeof(psize_t) - m_iOffset;
+                break;
+            case ERECVSTEP_PACKET:
+                buf.buf = (char*)m_pRecvPacket + m_iOffset;
+                buf.len = m_pRecvPacket->size - m_iOffset;
+                break;
             }
+
+            dwFlags = 0;
+            rc = WSARecv(m_Sock, &buf, 1, &dwBytes, &dwFlags, &m_Overlapped[EEVENT_RECV], NULL);
             break;
-        case ERECVSTEP_PACKET:
-            assert(m_iOffset <= m_pRecvPacket->size);
-            if(m_iOffset == m_pRecvPacket->size)
+
+            if(rc == SOCKET_ERROR)
             {
-                rc = PostEvent(INetworkEventManager::EEVENT_RECV, NO_ERROR, NULL, m_pRecvPacket);
-                if(rc != NO_ERROR) return rc;
-                SAFE_DELETE(m_pRecvPacket);
-                m_iOffset   = 0;
-                m_iSize     = 0;
-                m_eRecvStep = ERECVSTEP_MIN;
+                rc = WSAGetLastError();
+                if(rc == WSA_IO_PENDING) return NO_ERROR;
+                rc = PostEvent(INetworkEventManager::EEVENT_POSTRECVTFAIL, rc);
             }
-            break;
+            WSAResetEvent(m_Overlapped[EEVENT_SEND].hEvent);
+
+            if(rc != NO_ERROR) break;
+
+            if(dwBytes == 0)
+            {
+                rc = PostEvent(INetworkEventManager::EEVENT_CLOSE, NO_ERROR);
+                break;
+            }
+            m_iOffset += dwBytes;
+            switch(m_eRecvStep)
+            {
+            case ERECVSTEP_SIZE:
+                assert(m_iOffset <= sizeof(psize_t));
+                if(m_iOffset == sizeof(psize_t))
+                {
+                    if(m_pRecvPacket) return PostEvent(INetworkEventManager::EEVENT_POSTRECVTFAIL, -1);
+                    m_pRecvPacket = malloc(m_iSize);
+                    m_pRecvPacket->size = m_iSize;
+                    m_eRecvStep = ERECVSTEP_PACKET;
+                }
+                break;
+            case ERECVSTEP_PACKET:
+                assert(m_iOffset <= m_pRecvPacket->size);
+                if(m_iOffset == m_pRecvPacket->size)
+                {
+                    rc = PostEvent(INetworkEventManager::EEVENT_RECV, NO_ERROR, NULL, m_pRecvPacket);
+                    SAFE_DELETE(m_pRecvPacket);
+                    m_iOffset   = 0;
+                    m_iSize     = 0;
+                    m_eRecvStep = ERECVSTEP_MIN;
+                    if(rc != NO_ERROR) return rc;
+                }
+                break;
+            }
         }
+        break;
+    case ESOCKTYPE_UDP:
+        while(1)
+        {
+            switch(m_eSockType)
+            {
+            case ESOCKTYPE_TCP:
+                switch(m_eRecvStep)
+                {
+                case ERECVSTEP_SIZE:
+                    buf.buf = (char*)&m_iSize + m_iOffset;
+                    buf.len = sizeof(psize_t) - m_iOffset;
+                    break;
+                case ERECVSTEP_PACKET:
+                    buf.buf = (char*)m_pRecvPacket + m_iOffset;
+                    buf.len = m_pRecvPacket->size - m_iOffset;
+                    break;
+                }
+
+                dwFlags = 0;
+                rc = WSARecv(m_Sock, &buf, 1, &dwBytes, &dwFlags, &m_Overlapped[EEVENT_RECV], NULL);
+                break;
+            case ESOCKTYPE_UDP:
+                m_iRecvAddrSize = sizeof(m_RecvAddr);
+                rc = WSARecvFrom(m_Sock, &buf, 1, &dwBytes, &dwFlags, &m_RecvAddr, &m_iRecvAddrSize, &m_Overlapped[EEVENT_RECV], NULL);
+                break;
+            default:
+                assert(0);
+                break;
+            }
+
+            if(rc == SOCKET_ERROR)
+            {
+                rc = WSAGetLastError();
+                if(rc == WSA_IO_PENDING) return NO_ERROR;
+                rc = PostEvent(INetworkEventManager::EEVENT_POSTRECVTFAIL, rc);
+            }
+            WSAResetEvent(m_Overlapped[EEVENT_SEND].hEvent);
+
+            if(rc != NO_ERROR) break;
+
+            switch(m_eSockType)
+            {
+            case ESOCKTYPE_TCP:
+                if(dwBytes == 0)
+                {
+                    rc = PostEvent(INetworkEventManager::EEVENT_CLOSE, NO_ERROR);
+                    break;
+                }
+                m_iOffset += dwBytes;
+                switch(m_eRecvStep)
+                {
+                case ERECVSTEP_SIZE:
+                    assert(m_iOffset <= sizeof(psize_t));
+                    if(m_iOffset == sizeof(psize_t))
+                    {
+                        if(m_pRecvPacket) return PostEvent(INetworkEventManager::EEVENT_POSTRECVTFAIL, -1);
+                        m_pRecvPacket = malloc(m_iSize);
+                        m_pRecvPacket->size = m_iSize;
+                        m_eRecvStep = ERECVSTEP_PACKET;
+                    }
+                    break;
+                case ERECVSTEP_PACKET:
+                    assert(m_iOffset <= m_pRecvPacket->size);
+                    if(m_iOffset == m_pRecvPacket->size)
+                    {
+                        rc = PostEvent(INetworkEventManager::EEVENT_RECV, NO_ERROR, NULL, m_pRecvPacket);
+                        SAFE_DELETE(m_pRecvPacket);
+                        m_iOffset   = 0;
+                        m_iSize     = 0;
+                        m_eRecvStep = ERECVSTEP_MIN;
+                        if(rc != NO_ERROR) return rc;
+                    }
+                    break;
+                }
+            case ESOCKTYPE_UDP:
+                break;
+            default:
+                assert(0);
+                break;
+            }
+
+        }
+        break;
+    default:
+        assert(0);
+        break;
     }
+
 
     return NO_ERROR;
 }

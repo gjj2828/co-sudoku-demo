@@ -73,10 +73,13 @@ private:
     int                         m_iAcceptBufLen;
     SendDataQue                 m_queSendData;
     bool                        m_bSending;
+    bool                        m_bRecving;
     ERecvStep                   m_eRecvStep;
     int                         m_iOffset;
     psize_t                     m_iSize;
     Packet*                     m_pRecvPacket;
+    SOCKADDR                    m_RecvAddr;
+    int                         m_iRecvAddrSize;
     EventFunc                   m_pEventFunc[EEVENT_MAX];
 
 	SOCKET GetSocket() {return m_Sock;}
