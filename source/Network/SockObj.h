@@ -91,6 +91,7 @@ private:
 	int OnConnect();
 	int OnSend();
 	int OnRecv();
+    int OnRecv(int bytes);
 };
 
 #endif // __SOCKOBJ_H__
