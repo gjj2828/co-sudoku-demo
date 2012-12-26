@@ -1,7 +1,8 @@
 #ifndef __SOCKOBJ_H__
 #define __SOCKOBJ_H__
 
-#include <INetworkEvent.h>
+#include <MSWSock.h>
+#include "INetworkEventManager.h"
 #include "ISockObj.h"
 
 class CSockObj : public ISockObj
@@ -10,15 +11,15 @@ public:
     CSockObj(int id, INetworkEventManager* event_manager);
     ~CSockObj();
 
-    virtual int Create(ESockType type);
-    virtual int GetId() {return m_iId;}
-    virtual int Bind(SOCKADDR* addr, int namelen);
-    virtual int Listen(int backlog);
-    virtual int PostAccept(ISockObj* accept, char* buf, int len);
-    virtual int PostConnect(SOCKADDR* remote_addr, int remote_namelen, SOCKADDR* local_addr, int local_namelen, char* buf, int len);
-    virtual int PostSend(Packet* packet, SOCKADDR* addr, int namelen);
-    virtual int PostRecv();
-    virtual int Update();
+    virtual int     GetId() {return m_iId;}
+    virtual int     Listen(ESockType type, SOCKADDR* addr, int namelen, int backlog, int buf_len);
+    virtual int     Accept(SOCKET sock);
+    virtual int     Connect(SOCKADDR* remote_addr, int remote_namelen, SOCKADDR* local_addr, int local_namelen, char* buf, int len);
+    virtual int     Send(Packet* packet, SOCKADDR* addr, int namelen);
+    virtual int     Update();
+    virtual void    Close();
+
+private:
 
 private:
     enum EEvent
@@ -62,16 +63,17 @@ private:
     int                         m_iId;
     ESockType                   m_eSockType;
     //ETcpType                    m_eTcpType;
-    SOCKET                      m_Sock;
+    SOCKET                      m_soMain;
     HANDLE                      m_hEvents[EEVENT_MAX];
     WSAOVERLAPPED               m_Overlapped[EEVENT_MAX];
     LPFN_ACCEPTEX               m_lpfnAcceptEx;
     LPFN_GETACCEPTEXSOCKADDRS   m_lpfnGetAcceptExSockaddrs;
     INetworkEventManager*       m_pEventManager;
-    char*                       m_pAcceptBuf;
-    char*                       m_pAcceptBufOrg;
-    int                         m_iAcceptBufLen;
+    SOCKET                      m_soAccept;
+    char*                       m_pBuf;
+    int                         m_iBufLen;
     SendDataQue                 m_queSendData;
+    bool                        m_bConnecting;
     bool                        m_bSending;
     bool                        m_bRecving;
     ERecvStep                   m_eRecvStep;
@@ -82,11 +84,11 @@ private:
     int                         m_iRecvAddrSize;
     EventFunc                   m_pEventFunc[EEVENT_MAX];
 
-	SOCKET GetSocket() {return m_Sock;}
-
+    int PostAccept();
     int PostSend();
-    int PostEvent(INetworkEventManager::EEvent event, int ret = NO_ERROR, SOCKADDR* local = NULL, SOCKADDR* remote = NULL, Packet* recv = NULL);
-
+    int PostRecv();
+    int PostEvent( INetworkEventManager::EEvent event, int ret = NO_ERROR, SOCKADDR* local = NULL, SOCKADDR* remote = NULL
+                 , Packet* packet = NULL, char* buf = NULL, int buf_len = 0, SOCKET sock = INVALID_SOCKET );
 	int OnAccept();
 	int OnConnect();
 	int OnSend();

@@ -195,6 +195,10 @@
 				RelativePath=".\Timer.cpp"
 				>
 			</File>
+			<File
+				RelativePath=".\Timer.h"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="Í·ÎÄ¼þ"
@@ -215,14 +219,6 @@
 			</File>
 			<File
 				RelativePath=".\StdAfx.h"
-				>
-			</File>
-			<File
-				RelativePath=".\Timer.h"
-				>
-			</File>
-			<File
-				RelativePath=".\UserPacket.h"
 				>
 			</File>
 		</Filter>

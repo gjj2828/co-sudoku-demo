@@ -3,7 +3,6 @@
 #include <IPuzzleSystem.h>
 #include <IRenderSystem.h>
 #include "Timer.h"
-#include "UserPacket.h"
 
 const char* CGame::m_cClassName = GAME_NAME;
 const char* CGame::m_cWindowName = GAME_NAME;

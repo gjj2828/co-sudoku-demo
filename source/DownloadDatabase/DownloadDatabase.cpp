@@ -12,7 +12,7 @@ CDownloadDatabase::CDownloadDatabase(const char* proxy, int begin, int end, int 
 {
     if(proxy)
     {
-        strcpy(m_Proxy, proxy);
+        strcpy_s(m_Proxy, min(strlen(proxy), 32), proxy);
         m_bProxy = true;
     }
     else
@@ -96,10 +96,9 @@ int CDownloadDatabase::Init()
     }
 
     char filename[32];
-    sprintf(filename, "%d-%d.txt", m_iBegin, m_iEnd);
+    sprintf_s(filename, 32, "%d-%d.txt", m_iBegin, m_iEnd);
     DeleteFile(filename);
-    m_pFile = fopen(filename, "w");
-    if(!m_pFile) ERROR_RTN0("Can\'t open out file!");
+    if(fopen_s(&m_pFile, filename, "w")) ERROR_RTN0("Can\'t open out file!");
 
     return 1;
 }
@@ -203,16 +202,16 @@ DWORD WINAPI CDownloadDatabase::Download(void* param)
     ThreadInfo* info = (ThreadInfo*)param;
 
     char temp_name[32];
-    sprintf(temp_name, "temp%d.txt", info->puzzle);
+    sprintf_s(temp_name, 32, "temp%d.txt", info->puzzle);
 
     char commond_buf[256];
     if(info->proxy)
     {
-        sprintf(commond_buf, "tool\\wget -e \"http_proxy = %s\" -q -O %s http://www.suduko.us/j/smallcn.php?xh=%d", info->proxy, temp_name, info->puzzle);
+        sprintf_s(commond_buf, 256, "tool\\wget -e \"http_proxy = %s\" -q -O %s http://www.suduko.us/j/smallcn.php?xh=%d", info->proxy, temp_name, info->puzzle);
     }
     else
     {
-        sprintf(commond_buf, "tool\\wget -q -O %s http://www.suduko.us/j/smallcn.php?xh=%d", temp_name, info->puzzle);
+        sprintf_s(commond_buf, 256, "tool\\wget -q -O %s http://www.suduko.us/j/smallcn.php?xh=%d", temp_name, info->puzzle);
     }
 
     //WinExec(commond_buf, SW_HIDE);
@@ -225,8 +224,8 @@ DWORD WINAPI CDownloadDatabase::Download(void* param)
 
     WaitForSingleObject(pi.hProcess, INFINITE);
 
-    FILE*   pfr   = fopen(temp_name, "r");
-    if(!pfr) ERROR_RTN0("Can\'t download puzzle!");
+    FILE*   pfr = NULL;
+    if(fopen_s(&pfr, temp_name, "r")) ERROR_RTN0("Can\'t download puzzle!");
 
     char    str_buf[BUFLEN];
     char    *p1, *p2;
@@ -245,7 +244,7 @@ DWORD WINAPI CDownloadDatabase::Download(void* param)
     fclose(pfr);
     if(!bFound) ERROR_RTN0("Can\'t find puzzle!");
 
-    strcpy(info->data->buf, p1);
+    strcpy_s(info->data->buf, min(strlen(p1), BUFLEN), p1);
     info->data->state = EBUFSTATE_DOWNLOADED;
 
     do 

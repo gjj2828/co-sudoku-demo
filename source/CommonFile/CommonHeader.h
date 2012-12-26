@@ -127,18 +127,6 @@ enum
     return 0;                \
 }
 
-#define STOP_RTN0   \
-{                   \
-    Stop(context);  \
-    return 0;       \
-}
-
-#define STOP_RTN    \
-{                   \
-    Stop(context);  \
-    return;         \
-}
-
 #define BITTOCHARBUFFER(bit, buffer, bitlen, buflen)            \
 {                                                               \
     int index = 0;                                              \
@@ -160,7 +148,8 @@ enum
     {                                                           \
         for(int j = 0; j < CHAR_BIT && index < (bitlen); j++)   \
         {                                                       \
-            (bit)[index] = (buffer)[i] & (1 << j);              \
+            if((buffer)[i] & (1 << j)) (bit)[index] = true;     \
+            else (bit)[index] = false;                          \
             index++;                                            \
         }                                                       \
     }                                                           \

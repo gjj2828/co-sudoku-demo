@@ -132,7 +132,7 @@ void    main()
     char    proxy[64];
     printf("Do you need proxy?[y/n]:");
     char    buf[16];
-    if(!scanf("%s", buf)) ERROR_EXIT("Wrong Input!");
+    if(!scanf_s("%s", buf, 16)) ERROR_EXIT("Wrong Input!");
 
     if(strcmp(buf, "y") == 0)
     {
@@ -149,19 +149,19 @@ void    main()
     if(bProxy)
     {
         printf("Please input proxy:");
-        if(!scanf("%s", proxy)) ERROR_EXIT("Wrong Input!");
+        if(!scanf_s("%s", proxy, 64)) ERROR_EXIT("Wrong Input!");
     }
     printf("Please input the download range[1-50000]:\n");
     int iBegin, iEnd;
     printf("begin=");
-    if(!scanf("%d", &iBegin) || iBegin < ID_MIN || iBegin > ID_MAX) ERROR_EXIT("Wrong Input!");
+    if(!scanf_s("%d", &iBegin) || iBegin < ID_MIN || iBegin > ID_MAX) ERROR_EXIT("Wrong Input!");
     printf("end=");
-    if(!scanf("%d", &iEnd) || iEnd < iBegin || iEnd > ID_MAX) ERROR_EXIT("Wrong Input!");
+    if(!scanf_s("%d", &iEnd) || iEnd < iBegin || iEnd > ID_MAX) ERROR_EXIT("Wrong Input!");
 
     printf("Please input the connection num[1-%d]:\n", MAXIMUM_WAIT_OBJECTS);
     int iConNum;
     printf("connection num=");
-    if(!scanf("%d", &iConNum) || iConNum < 1 || iConNum >  MAXIMUM_WAIT_OBJECTS) ERROR_EXIT("Wrong Input!");
+    if(!scanf_s("%d", &iConNum) || iConNum < 1 || iConNum >  MAXIMUM_WAIT_OBJECTS) ERROR_EXIT("Wrong Input!");
 
     char* pProxy = NULL;
     if(bProxy) pProxy = proxy;

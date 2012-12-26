@@ -22,14 +22,18 @@ int APIENTRY    WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCm
 #if USE_CONSOLE
     AllocConsole();
 #endif // USE_CONSOLE
-    freopen("conout$", "w", stdout);
-    freopen("conin$", "r", stdin);
+    FILE* conout = NULL;
+    FILE* conin = NULL;
+    freopen_s(&conout, "conout$", "w", stdout);
+    freopen_s(&conin, "conin$", "r", stdin);
     if(pGame->Init(hInstance))
     {
         pGame->Run();
     }
     SAFE_RELEASE(pGame);
     FreeLibrary(hGameDll);
+    SAFE_FCLOSE(conout);
+    SAFE_FCLOSE(conin);
 #if USE_CONSOLE
     FreeConsole();
 #endif // USE_CONSOLE

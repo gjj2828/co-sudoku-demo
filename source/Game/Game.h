@@ -40,6 +40,24 @@ private:
         FPS = 60,
     };
 
+    enum EPacketType
+    {
+        EPACKETTYPE_MIN,
+        EPACKETTYPE_TEST = EPACKETTYPE_MIN,
+        EPACKETTYPE_MAX,
+    };
+
+    struct TestPacket : public Packet
+    {
+        TestPacket()
+        {
+            size = sizeof(*this);
+            type = EPACKETTYPE_TEST;
+        }
+
+        int test;
+    };
+
     HINSTANCE           m_hInstance;
     HWND                m_hWnd;
     HBRUSH              m_hBkBrush;

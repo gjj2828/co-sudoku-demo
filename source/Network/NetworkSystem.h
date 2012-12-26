@@ -2,8 +2,9 @@
 #define __NETWORKSYSTEM_H__
 
 #include <INetworkSystem.h>
-#include <INetworkEvent.h>
 #include <MSWSock.h>
+#include "ISockObj.h"
+#include "INetworkEventManager.h"
 
 class CNetworkSystem: public INetworkSystem, public INetworkEventManager
 {
@@ -13,18 +14,21 @@ public:
     virtual void    Release();
     virtual int     Start(EMode mode, float time);
     virtual void    Stop();
-    virtual void    Update(float time);
-    virtual void    RegisterListener(INetworkListener* listener) {}
-    virtual void    UnRegisterListener(INetworkListener* listener) {}
+    virtual int     Update(float time);
+    virtual void    Send(Packet* packet);
+    virtual void    Send(Packet* packet, int client);
+    virtual void    RegisterListener(INetworkListener* listener);
+    virtual void    UnRegisterListener(INetworkListener* listener);
 
 private:
     enum EState
     {
         ESTATE_MIN,
-        ESTATE_STOPPED = ESTATE_MIN,
+        ESTATE_STOP = ESTATE_MIN,
         ESTATE_WAITING,
         ESTATE_CONNECTING,
-        ESTATE_PAIRED,
+        ESTATE_HOST,
+        ESTATE_CLIENT,
         ESTATE_MAX,
     };
 
@@ -36,121 +40,83 @@ private:
         GAMENAME_LEN    = 16,
     };
 
-    //enum EEvent
-    //{
-    //    EEVENT_MIN,
-    //    EEVENT_BROADCAST_SEND = EEVENT_MIN,
-    //    EEVENT_BROADCAST_RECV,
-    //    EEVENT_ACCEPT,
-    //    EEVENT_CONNECT,
-    //    EEVENT_CLIENTSEND,
-    //    EEVENT_CLIENTRECV,
-    //    EEVENT_HOSTSEND_MIN = EEVENT_CLIENTSEND,
-    //    EEVENT_HOSTSEND_MAX = EEVENT_HOSTSEND_MIN + COCLIENT_MAX,
-    //    EEVENT_HOSTRECV_MIN = EEVENT_HOSTSEND_MAX,
-    //    EEVENT_HOSTRECV_MAX = EEVENT_HOSTRECV_MIN + COCLIENT_MAX,
-    //    EEVENT_MAX = EEVENT_HOSTRECV_MAX,
-    //};
-
-    struct BroadCastData
+    enum ESockObjType
     {
+        ESOCKOBJTYPE_MIN,
+        ESOCKOBJTYPE_LISTEN = ESOCKOBJTYPE_MIN,
+        ESOCKOBJTYPE_BROADCAST,
+        ESOCKOBJTYPE_CLIENT,
+        ESOCKOBJTYPE_COCLIENT_MIN = ESOCKOBJTYPE_CLIENT,
+        ESOCKOBJTYPE_COCLIENT_MAX = ESOCKOBJTYPE_COCLIENT_MIN + COCLIENT_MAX,
+        ESOCKOBJTYPE_MAX = ESOCKOBJTYPE_COCLIENT_MAX,
+    };
+
+    enum EPacketType
+    {
+        EPACKETTYPE_MIN,
+        EPACKETTYPE_BROADCAST = EPACKETTYPE_MIN,
+        EPACKETTYPE_MAX,
+    };
+
+    struct BroadCastPacket : public Packet
+    {
+        BroadCastPacket()
+        {
+            size = sizeof(*this);
+            type = EPACKETTYPE_BROADCAST;
+        }
         char    sGameName[GAMENAME_LEN];
         int     iSendCount;
-        UINT    iState      :  2;
-        UINT    iCoClientNum  :  5;
-        UINT    iDummy      : 25;
+        UINT    iState          :  2;
+        UINT    iCoClientNum    :  5;
+        UINT    iDummy          : 25;
     };
 
-    struct GameData
-    {
-        int choice;
-    };
-
-    typedef std::deque<GameData*> GameDataQue;
-
-    struct CoClinetData
-    {
-        SOCKET      s;
-        GameData    RecvBuf;
-        GameDataQue SendBufQue;
-        bool        bSending;
-    };
+    typedef std::vector<ISockObj*> SockObjVector;
+    typedef std::vector<INetworkListener*> ListenerVector;
 
     EState                      m_eState;
+    float                       m_fTime;
     int                         m_iSendCount;
-    bool                        m_bBroadCastSending;
     float                       m_fBroadCastSendTime;
-    bool                        m_bClientSending;
-    bool                        m_bHost;
+
+    float                       m_fRecvServerTime;
+    bool                        m_bRecvServer;
+    IN_ADDR                     m_Server;
+    BroadCastPacket             m_ServerPacket;
+
+    UINT                        m_iCoClientMax;
+    UINT                        m_iCoClientNum;
 
     SOCKADDR_IN                 m_BroadCastBindAddr;
     SOCKADDR_IN                 m_BroadCastSendAddr;
     SOCKADDR_IN                 m_BroadCastRecvAddr;
     SOCKADDR_IN                 m_LocalBindAddr;
 
-    int                         m_iBroadCastRecAddrSize;
+    ISockObj*                   m_pSockObjs[ESOCKOBJTYPE_MAX];
 
-    SOCKET                      m_soBroadCast;
-    SOCKET                      m_soListener;
-    SOCKET                      m_soAccept;
-    SOCKET                      m_soClient;
+    SockObjVector               m_vectorDeletedSockObj;
 
-    CoClinetData                m_CoClientData[COCLIENT_MAX];
+    ListenerVector              m_vectorListener;
 
-    LPFN_ACCEPTEX               m_lpfnAcceptEx;
-    LPFN_GETACCEPTEXSOCKADDRS   m_lpfnGetAcceptExSockaddrs;
+    virtual int HandleEvent(const Event& event);
 
-    int                         m_iCoClientMax;
-    int                         m_iCoClientNum;
+    void        BroadCastCheckInfo();
+    int         BroadCastSendInfo();
 
-    HANDLE                      m_hEvents[EEVENT_MAX];
-    WSAOVERLAPPED               m_Overlapped[EEVENT_MAX];
+    bool        FindEmptyCoClient(int& empty);
 
-    BroadCastData               m_BroadCastSendBuf;
-    BroadCastData               m_BroadCastRecvBuf;
-    char                        m_AcceptBuf[GAMENAME_LEN + (sizeof(SOCKADDR_IN) + 16) * 2];
-    char                        m_ConnectBuf[GAMENAME_LEN];
-    GameData                    m_ClientRecvBuf;
-    GameDataQue                 m_ClientSendBufQue;
+    void        ChangeState(EState state);
 
-    bool                        m_bCheckServer;
-    float                       m_fCheckServerTime;
-    bool                        m_bRecvServer;
-    in_addr                     m_Server;
-    BroadCastData               m_ServerData;
+    ISockObj*   CreateSockObj(int id);
+    void        DeleteSockObj(ISockObj* obj);
+    void        FreeDeletedSockObj();
 
-    int     PostBroadCastSend(float time);
-    int     PostBroadCastRecv();
-    int     PostAccept();
-    int     PostConnect();
-    int     PostClientSend();
-    int     PostClientRecv();
-    int     PostHostSend(int client);
-    int     PostHostRecv(int client);
-
-    int     OnBroadCastSend(float time);
-    int     OnBroadCastRecv(float time);
-    int     OnAccept(float time);
-    int     OnConnect(float time);
-    int     OnClientSend(float time);
-    int     OnClientRecv(float time);
-    int     OnHostSend(float time, int client);
-    int     OnHostRecv(float time, int client);
-
-    void    StartClient();
-    void    StopClient(float time);
-    void    StartCoClient(int client);
-    void    StopCoClient(int client);
-
-    void    StartCheckServer(float time);
-    void    StopCheckServer();
-    void    CheckBroadCastServer(float time);
-    int     CheckBroadCastSend(float time);
-
-    bool    FindEmptyCoClient(int& empty);
-
-    void    ReleaseInternal();
-    void    ReleaseCoClientData(int client);
+    void        OnAccept(int client);
+    void        OnConnect();
+    void        OnRecv(Packet* pPacket);
+    void        OnDisconnect();
+    void        OnStop();
 
     static const char* m_cBroadCastSendAddr;
     static const float m_cBroadCastSendInterval;

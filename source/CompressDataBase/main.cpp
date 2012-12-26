@@ -28,6 +28,7 @@ int InitModules()
         g_pCompressions[i] = fCreateCompressionFunc();
         if(!g_pCompressions[i]) ERROR_RTN0("GetCompression failed!")
     }
+    return 1;
 }
 
 int InitFind()
@@ -59,10 +60,9 @@ int Compress(const char* in_name, const char* out_name, const char* def_name)
     FILE* in = NULL;
     FILE* out = NULL;
     FILE* def = NULL;
-    in = fopen(in_name, "r");
-    out = fopen(out_name, "wb");
-    def = fopen(def_name, "wb");
-    if(!in || !out|| !def)
+    if(fopen_s(&in, in_name, "r")
+    || fopen_s(&out, out_name, "wb")
+    || fopen_s(&def, def_name, "wb"))
     {
         SAFE_FCLOSE(in);
         SAFE_FCLOSE(out);
@@ -110,9 +110,9 @@ void main()
         char* p= strrchr(g_FindData.name, '.');
         if(!p)  goto END;
         *p = 0;
-        sprintf(InName, "DataBase\\Original\\%s.txt", g_FindData.name);
-        sprintf(OutName, "DataBase\\%s.db", g_FindData.name);
-        sprintf(DefName, "DataBase\\%s.def", g_FindData.name);
+        sprintf_s(InName, 256, "DataBase\\Original\\%s.txt", g_FindData.name);
+        sprintf_s(OutName, 256, "DataBase\\%s.db", g_FindData.name);
+        sprintf_s(DefName, 256, "DataBase\\%s.def", g_FindData.name);
         if(!Compress(InName, OutName, DefName)) goto END;
         printf("\n");
     }while(_findnext(g_FindHandle, &g_FindData) == 0);
