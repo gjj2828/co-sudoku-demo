@@ -1,0 +1,6 @@
+Bin/
+BinTemp/
+*.ncb
+*.suo
+*.user
+*.aps
