@@ -34,8 +34,9 @@ private:
 
     enum
     {
-        MAIN_PORT       = 7778,
-        BROADCAST_PORT  = 7779,
+        LISTEN_PORT     = 7778,
+        CLIENT_PORT     = 7779,
+        BROADCAST_PORT  = 7780,
         COCLIENT_MAX    = 16,
         GAMENAME_LEN    = 16,
     };
@@ -91,7 +92,8 @@ private:
     SOCKADDR_IN                 m_BroadCastBindAddr;
     SOCKADDR_IN                 m_BroadCastSendAddr;
     SOCKADDR_IN                 m_BroadCastRecvAddr;
-    SOCKADDR_IN                 m_LocalBindAddr;
+    SOCKADDR_IN                 m_ListenBindAddr;
+    SOCKADDR_IN                 m_ClientBindAddr;
 
     ISockObj*                   m_pSockObjs[ESOCKOBJTYPE_MAX];
 
@@ -118,7 +120,6 @@ private:
     void        OnDisconnect();
     void        OnStop();
 
-    static const char* m_cBroadCastSendAddr;
     static const float m_cBroadCastSendInterval;
     static const float m_cBroadCastCheckServerInterval;
 };

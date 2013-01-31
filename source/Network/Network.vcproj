@@ -84,9 +84,9 @@
 		</Configuration>
 		<Configuration
 			Name="Release|Win32"
-			OutputDirectory="$(SolutionDir)$(ConfigurationName)"
-			IntermediateDirectory="$(ConfigurationName)"
-			ConfigurationType="1"
+			OutputDirectory="$(SolutionDir)..\Bin\$(ConfigurationName)"
+			IntermediateDirectory="$(SolutionDir)..\BinTemp\$(ConfigurationName)\$(ProjectName)"
+			ConfigurationType="2"
 			InheritedPropertySheets="..\Common.vsprops;..\Dll.vsprops"
 			CharacterSet="2"
 			WholeProgramOptimization="1"
@@ -126,6 +126,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				AdditionalDependencies="WS2_32.LIB"
 				GenerateDebugInformation="true"
 				OptimizeReferences="2"
 				EnableCOMDATFolding="2"
@@ -179,6 +180,14 @@
 				>
 				<FileConfiguration
 					Name="Debug|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="1"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32"
 					>
 					<Tool
 						Name="VCCLCompilerTool"

@@ -14,7 +14,7 @@ public:
         ESOCKTYPE_MAX,
     };
     virtual int     GetId()                                                                                                         = 0;
-    virtual int     Listen(ESockType type, SOCKADDR* addr = NULL, int namelen = 0, int backlog = 5, int buf_len = 0)                = 0;
+    virtual int     Listen(ESockType type, SOCKADDR* addr = NULL, int namelen = 0, int buf_len = 0, int backlog = 5)                = 0;
     virtual int     Accept(SOCKET sock)                                                                                             = 0;
     virtual int     Connect(SOCKADDR* remote_addr, int remote_namelen, SOCKADDR* local_addr, int local_namelen, char* buf, int len) = 0;
     virtual int     Send(Packet* packet, SOCKADDR* addr = NULL, int namelen = 0)                                                    = 0;

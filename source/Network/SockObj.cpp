@@ -23,10 +23,10 @@ CSockObj::CSockObj(int id, INetworkEventManager* event_manager)
         m_Overlapped[i].hEvent = WSACreateEvent();
         m_hEvents[i] = m_Overlapped[i].hEvent;
     }
-    m_pEventFunc[EEVENT_ACCEPT] = &CSockObj::OnAccept;
-    m_pEventFunc[EEVENT_CONNECT] = &CSockObj::OnConnect;
-    m_pEventFunc[EEVENT_SEND] = &CSockObj::OnSend;
-    m_pEventFunc[EEVENT_RECV] = &CSockObj::OnRecv;
+    m_pEventFunc[EEVENT_ACCEPT]     = &CSockObj::OnAccept;
+    m_pEventFunc[EEVENT_CONNECT]    = &CSockObj::OnConnect;
+    m_pEventFunc[EEVENT_SEND]       = &CSockObj::OnSend;
+    m_pEventFunc[EEVENT_RECV]       = &CSockObj::OnRecv;
 }
 
 CSockObj::~CSockObj()
@@ -34,7 +34,7 @@ CSockObj::~CSockObj()
     Close();
 }
 
-int CSockObj::Listen(ESockType type, SOCKADDR* addr, int namelen, int backlog, int buf_len)
+int CSockObj::Listen(ESockType type, SOCKADDR* addr, int namelen, int buf_len, int backlog)
 {
     if(m_soMain != INVALID_SOCKET) return PostEvent(INetworkEventManager::EEVENT_SOCKETALREADEXIST, -1); 
 
@@ -81,12 +81,18 @@ int CSockObj::Listen(ESockType type, SOCKADDR* addr, int namelen, int backlog, i
         break;
 
     case ESOCKTYPE_UDP:
-        m_soMain = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
-        if(m_soMain == INVALID_SOCKET) return PostEvent(INetworkEventManager::EEVENT_CREATEFAIL, -1);
-        m_eSockType = ESOCKTYPE_UDP;
-        m_iBufLen = buf_len;
-        m_pBuf = (char*)malloc(m_iBufLen);
-        return PostRecv();
+        {
+            m_soMain = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+            if(m_soMain == INVALID_SOCKET) return PostEvent(INetworkEventManager::EEVENT_CREATEFAIL, -1);
+            BOOL bVal = TRUE;
+            if(bind(m_soMain, addr, namelen) == SOCKET_ERROR) return PostEvent(INetworkEventManager::EEVENT_BINDFAIL, WSAGetLastError());
+            if(setsockopt(m_soMain, SOL_SOCKET, SO_BROADCAST, (char*)&bVal, sizeof(BOOL)) == SOCKET_ERROR)
+                return PostEvent(INetworkEventManager::EEVENT_SETBROADCASTFAIL, WSAGetLastError());
+            m_eSockType = ESOCKTYPE_UDP;
+            m_iBufLen = buf_len;
+            m_pBuf = (char*)malloc(m_iBufLen);
+            return PostRecv();
+        }
         break;
 
     default:
@@ -169,17 +175,14 @@ int CSockObj::Update()
     if(rc == WAIT_TIMEOUT) return NO_ERROR;
     if(rc == WAIT_FAILED) return rc;
 
-    if(rc != WAIT_TIMEOUT)
+    for(int i = 0; i < EEVENT_MAX; i++)
     {
-        for(int i = 0; i < EEVENT_MAX; i++)
+        rc = WaitForSingleObject(m_hEvents[i], 0);
+        if(rc == WAIT_FAILED) return rc;
+        if(rc == WAIT_OBJECT_0)
         {
-            rc = WaitForSingleObject(m_hEvents[i], 0);
-            if(rc == WAIT_FAILED) return rc;
-            if(rc == WAIT_OBJECT_0)
-            {
-                rc = (this->*m_pEventFunc[i])();
-                if(rc != NO_ERROR) return rc;
-            }
+            rc = (this->*m_pEventFunc[i])();
+            if(rc != NO_ERROR) return rc;
         }
     }
 
@@ -294,7 +297,7 @@ int CSockObj::PostRecv()
 
     int rc = NO_ERROR;
 
-    if(!m_bRecving) return NO_ERROR;
+    if(m_bRecving) return NO_ERROR;
 
     m_bRecving = true;
 
@@ -337,6 +340,7 @@ int CSockObj::PostRecv()
             m_iRecvAddrSize = sizeof(m_RecvAddr);
             buf.buf = m_pBuf;
             buf.len = m_iBufLen;
+            dwFlags = 0;
             rc = WSARecvFrom(m_soMain, &buf, 1, &dwBytes, &dwFlags, &m_RecvAddr, &m_iRecvAddrSize, &m_Overlapped[EEVENT_RECV], NULL);
 
             if(rc == SOCKET_ERROR)
@@ -471,7 +475,7 @@ int CSockObj::OnRecv()
 
     m_bRecving = false;
 
-    rc = WSAGetOverlappedResult(m_soMain, &m_Overlapped[EEVENT_SEND], &dwBytes, false, &dwFlags);
+    rc = WSAGetOverlappedResult(m_soMain, &m_Overlapped[EEVENT_RECV], &dwBytes, false, &dwFlags);
 
     switch(m_eSockType)
     {

@@ -18,6 +18,7 @@ CGame::CGame()
 , m_pTimer(NULL)
 , m_fTime(0)
 , m_eCoType(ECOTYPE_MIN)
+, m_eATState(EATSTATE_MIN)
 {
     ZeroMemory(m_hModules, sizeof(HMODULE) * EMODULE_MAX);
     ZeroMemory(&m_env, sizeof(GlobalEnviroment));
@@ -36,12 +37,6 @@ int CGame::Init(HINSTANCE hInstance)
 
     //ShowWindow(m_hWnd, SW_NORMAL);
     //UpdateWindow(m_hWnd);
-
-    m_eCoType = ECOTYPE_AUTOPAIR;
-    if(!m_env.pNetworkSystem->Start(INetworkSystem::EMODE_AUTOPAIR, m_fTime))
-    {
-        m_eCoType = ECOTYPE_SINGLE;
-    }
 
     return 1;
 }
@@ -69,6 +64,22 @@ void CGame::Run()
 
         UpdateTimer();
         m_env.pNetworkSystem->Update(m_fTime);
+
+        static bool s_bFlag = false;
+        if(!s_bFlag && m_eCoType == ECOTYPE_SINGLE && m_fTime > 3.0f)
+        {
+            s_bFlag = true;
+            if(m_env.pNetworkSystem->Start(INetworkSystem::EMODE_AUTOPAIR, m_fTime))
+            {
+                m_eCoType = ECOTYPE_AUTOPAIR;
+                m_eATState = EATSTATE_WAITING;
+                m_env.pNetworkSystem->RegisterListener(this);
+            }
+            else
+            {
+                PRINT("NetworkSystem Start Error!\n");
+            }
+        }
     }
 }
 
@@ -198,6 +209,16 @@ void CGame::UpdateTimer()
     if(dt < m_cSPF) Sleep((DWORD)((m_cSPF - dt) * 1000.0f));
 
     m_fTime = m_pTimer->GetTime();
+}
+
+void CGame::OnAccept(int client)
+{
+    PRINT("OnAccept client: %d\n", client);
+}
+
+void CGame::OnConnect()
+{
+    PRINT("OnConnect\n");
 }
 
 LRESULT CGame::WndProc(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam)

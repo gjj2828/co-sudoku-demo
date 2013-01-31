@@ -12,7 +12,7 @@ public:
     ~CSockObj();
 
     virtual int     GetId() {return m_iId;}
-    virtual int     Listen(ESockType type, SOCKADDR* addr, int namelen, int backlog, int buf_len);
+    virtual int     Listen(ESockType type, SOCKADDR* addr, int namelen, int buf_len, int backlog);
     virtual int     Accept(SOCKET sock);
     virtual int     Connect(SOCKADDR* remote_addr, int remote_namelen, SOCKADDR* local_addr, int local_namelen, char* buf, int len);
     virtual int     Send(Packet* packet, SOCKADDR* addr, int namelen);
@@ -26,7 +26,7 @@ private:
     {
         EEVENT_MIN,
         EEVENT_ACCEPT = EEVENT_MIN,
-        EEVENT_CONNECT = EEVENT_ACCEPT,
+        EEVENT_CONNECT,
         EEVENT_SEND,
         EEVENT_RECV,
         EEVENT_MAX,

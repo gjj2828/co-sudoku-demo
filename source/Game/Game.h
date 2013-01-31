@@ -35,6 +35,14 @@ private:
         ECOTYPE_MAX,
     };
 
+    enum EATState
+    {
+        EATSTATE_MIN,
+        EATSTATE_WAITING,
+        EATSTATE_HOST,
+        EATSTATE_CLIENT,
+    };
+
     enum
     {
         FPS = 60,
@@ -70,11 +78,15 @@ private:
     float               m_fTime;
 
     ECoType             m_eCoType;
+    EATState            m_eATState;
 
     int     LoadDll();
     int     InitWindow();
     int     InitTimer();
     void    UpdateTimer();
+
+    virtual void OnAccept(int client);
+    virtual void OnConnect();
 
     static const float m_cSPF;
     static const char* m_cClassName;

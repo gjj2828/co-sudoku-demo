@@ -29,7 +29,6 @@
     return;         \
 }
 
-const char* CNetworkSystem::m_cBroadCastSendAddr            = "192.168.255.255";
 const float CNetworkSystem::m_cBroadCastSendInterval        = 1.0f;
 const float CNetworkSystem::m_cBroadCastCheckServerInterval = 1.0f;
 
@@ -52,17 +51,21 @@ int CNetworkSystem::Init()
 
     if(WSAStartup(MAKEWORD(2, 2), &wsd)) ERROR_RTN0("Can\'t load Winsock!");
 
+    m_ListenBindAddr.sin_family          = AF_INET;
+    m_ListenBindAddr.sin_addr.s_addr     = htonl(INADDR_ANY);
+    m_ListenBindAddr.sin_port            = htons(LISTEN_PORT);
+
+    m_ClientBindAddr.sin_family          = AF_INET;
+    m_ClientBindAddr.sin_addr.s_addr     = htonl(INADDR_ANY);
+    m_ClientBindAddr.sin_port            = htons(CLIENT_PORT);
+
     m_BroadCastBindAddr.sin_family      = AF_INET;
     m_BroadCastBindAddr.sin_addr.s_addr = htonl(INADDR_ANY);
     m_BroadCastBindAddr.sin_port        = htons(BROADCAST_PORT);
 
     m_BroadCastSendAddr.sin_family      = AF_INET;
-    m_BroadCastSendAddr.sin_addr.s_addr = inet_addr(m_cBroadCastSendAddr);
+    m_BroadCastSendAddr.sin_addr.s_addr = htonl(INADDR_BROADCAST);
     m_BroadCastSendAddr.sin_port        = htons(BROADCAST_PORT);
-
-    m_LocalBindAddr.sin_family          = AF_INET;
-    m_LocalBindAddr.sin_addr.s_addr     = htonl(INADDR_ANY);
-    m_LocalBindAddr.sin_port            = htons(MAIN_PORT);
 
     return 1;
 }
@@ -88,12 +91,12 @@ int CNetworkSystem::Start(EMode mode, float time)
     ChangeState(ESTATE_WAITING);
 
     m_pSockObjs[ESOCKOBJTYPE_LISTEN] = CreateSockObj(ESOCKOBJTYPE_LISTEN);
-    if(m_pSockObjs[ESOCKOBJTYPE_LISTEN]->Listen(ISockObj::ESOCKTYPE_TCP, (SOCKADDR*)&m_LocalBindAddr
-        , sizeof(m_LocalBindAddr), 5, GAMENAME_LEN) != NO_ERROR) STOP_RTN0;
+    if(m_pSockObjs[ESOCKOBJTYPE_LISTEN]->Listen(ISockObj::ESOCKTYPE_TCP, (SOCKADDR*)&m_ListenBindAddr
+        , sizeof(m_ListenBindAddr), GAMENAME_LEN, 5) != NO_ERROR) STOP_RTN0;
 
     m_pSockObjs[ESOCKOBJTYPE_BROADCAST] = CreateSockObj(ESOCKOBJTYPE_BROADCAST);
-    if(m_pSockObjs[ESOCKOBJTYPE_BROADCAST]->Listen(ISockObj::ESOCKTYPE_UDP, (SOCKADDR*)&m_LocalBindAddr
-        , sizeof(m_LocalBindAddr)) != NO_ERROR) STOP_RTN0;
+    if(m_pSockObjs[ESOCKOBJTYPE_BROADCAST]->Listen(ISockObj::ESOCKTYPE_UDP, (SOCKADDR*)&m_BroadCastBindAddr
+        , sizeof(m_BroadCastBindAddr), sizeof(BroadCastPacket)) != NO_ERROR) STOP_RTN0;
 
     return 1;
 }
@@ -208,6 +211,7 @@ int CNetworkSystem::HandleEvent(const Event& event)
         if(m_eState == ESTATE_CONNECTING)
         {
             ChangeState(ESTATE_CLIENT);
+            OnConnect();
         }
         else
         {
@@ -273,13 +277,13 @@ int CNetworkSystem::HandleEvent(const Event& event)
                                 }
                             }
                         }
+                    }
 
-                        if(bCheck)
-                        {
-                            memcpy(&m_ServerPacket, packet, sizeof(BroadCastPacket));
-                            m_Server = pRemoteAddr->sin_addr;
-                            m_bRecvServer = true;
-                        }
+                    if(bCheck)
+                    {
+                        memcpy(&m_ServerPacket, packet, sizeof(BroadCastPacket));
+                        m_Server = pRemoteAddr->sin_addr;
+                        m_bRecvServer = true;
                     }
                 }
             }
@@ -328,6 +332,7 @@ int CNetworkSystem::HandleEvent(const Event& event)
     case EEVENT_CREATEFAIL:
     case EEVENT_BINDFAIL:
     case EEVENT_LISTENFAIL:
+    case EEVENT_SETBROADCASTFAIL:
     case EEVENT_POSTCONNECTFAIL:
     case EEVENT_POSTACCEPTFAIL:
     case EEVENT_POSTSENDFAIL:
@@ -350,14 +355,14 @@ void CNetworkSystem::BroadCastCheckInfo()
 
             ServerAddr.sin_family   = AF_INET;
             ServerAddr.sin_addr     = m_Server;
-            ServerAddr.sin_port     = htons(MAIN_PORT);
+            ServerAddr.sin_port     = htons(LISTEN_PORT);
 
             char buf[GAMENAME_LEN];
             strcpy_s(buf, GAMENAME_LEN, GAME_NAME);
 
             m_pSockObjs[ESOCKOBJTYPE_CLIENT] = CreateSockObj(ESOCKOBJTYPE_CLIENT);
-            if(m_pSockObjs[ESOCKOBJTYPE_CLIENT]->Connect((SOCKADDR*)&ServerAddr, sizeof(ServerAddr), (SOCKADDR*)&m_LocalBindAddr
-                , sizeof(m_LocalBindAddr), buf, GAMENAME_LEN) == NO_ERROR)
+            if(m_pSockObjs[ESOCKOBJTYPE_CLIENT]->Connect((SOCKADDR*)&ServerAddr, sizeof(ServerAddr), (SOCKADDR*)&m_ClientBindAddr
+                , sizeof(m_ClientBindAddr), buf, GAMENAME_LEN) == NO_ERROR)
             {
                 ChangeState(ESTATE_CONNECTING);
             }
