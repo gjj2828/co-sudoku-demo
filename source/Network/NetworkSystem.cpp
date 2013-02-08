@@ -11,10 +11,10 @@
     }                       \
 }
 
-#define SAFE_DELETESOCKOBJ(p)   \
-{                               \
-    if(p) DeleteSockObj(p);     \
-    (p) = NULL;                 \
+#define SAFE_FREESOCKOBJ(p) \
+{                           \
+    if(p) FreeSockObj(p);   \
+    (p) = NULL;             \
 }
 
 #define STOP_RTN0   \
@@ -107,10 +107,8 @@ void CNetworkSystem::Stop()
     ChangeState(ESTATE_STOP);
     for(int i = 0; i < ESOCKOBJTYPE_MAX; i++)
     {
-        if(!m_pSockObjs[i]) continue;
-        SAFE_DELETESOCKOBJ(m_pSockObjs[i]);
+        SAFE_FREESOCKOBJ(m_pSockObjs[i]);
     }
-    FreeDeletedSockObj();
     OnStop();
 }
 
@@ -127,19 +125,25 @@ int CNetworkSystem::Update(float time)
         if(m_pSockObjs[i])
         {
             rc = m_pSockObjs[i]->Update();
-            if(rc != NO_ERROR) break;
+            if(rc != NO_ERROR)
+            {
+                if(i == ESOCKOBJTYPE_LISTEN || i == ESOCKOBJTYPE_BROADCAST)
+                {
+                    Stop();
+                    return rc;
+                }
+                else
+                {
+                    SAFE_FREESOCKOBJ(m_pSockObjs[i]);
+                }
+            }
         }
     }
 
-    if(rc == NO_ERROR)
-    {
-        BroadCastCheckInfo();
-        rc = BroadCastSendInfo();
-    }
+    BroadCastCheckInfo();
+    rc = BroadCastSendInfo();
 
     if(rc != NO_ERROR) Stop();
-
-    FreeDeletedSockObj();
 
     return rc;
 }
@@ -208,15 +212,11 @@ int CNetworkSystem::HandleEvent(const Event& event)
         break;
 
     case  EEVENT_ONCONNECT:
-        if(m_eState == ESTATE_CONNECTING)
-        {
-            ChangeState(ESTATE_CLIENT);
-            OnConnect();
-        }
-        else
-        {
-            SAFE_DELETESOCKOBJ(m_pSockObjs[ESOCKOBJTYPE_CLIENT]);
-        }
+        if(m_eState != ESTATE_CONNECTING) return -1;
+
+        ChangeState(ESTATE_CLIENT);
+        OnConnect();
+
         break;
 
     case EEVENT_ONRECV:
@@ -301,19 +301,19 @@ int CNetworkSystem::HandleEvent(const Event& event)
             int id = event.pSockObj->GetId();
             if(m_eState == ESTATE_CLIENT && id == ESOCKOBJTYPE_CLIENT)
             {
-                SAFE_DELETESOCKOBJ(m_pSockObjs[ESOCKOBJTYPE_CLIENT]);
                 ChangeState(ESTATE_WAITING);
                 OnDisconnect();
+                return -1;
             }
             else if(m_eState == ESTATE_HOST && id >= ESOCKOBJTYPE_COCLIENT_MIN && id < ESOCKOBJTYPE_COCLIENT_MAX)
             {
-                SAFE_DELETESOCKOBJ(m_pSockObjs[id]);
                 m_iCoClientNum--;
                 if(m_iCoClientNum == 0)
                 {
                     OnDisconnect();
                     ChangeState(ESTATE_WAITING);
                 }
+                return -1;
             }
         }
         break;
@@ -321,10 +321,9 @@ int CNetworkSystem::HandleEvent(const Event& event)
     case EEVENT_ONCONNECTFAIL:
         if(m_eState == ESTATE_CONNECTING)
         {
-            SAFE_DELETESOCKOBJ(m_pSockObjs[ESOCKOBJTYPE_CLIENT]);
             ChangeState(ESTATE_WAITING);
         }
-        break;
+        return -1;
 
     case EEVENT_WRONGSOCKTYPE:
     case EEVENT_SOCKETALREADEXIST:
@@ -368,7 +367,7 @@ void CNetworkSystem::BroadCastCheckInfo()
             }
             else
             {
-                SAFE_DELETESOCKOBJ(m_pSockObjs[ESOCKOBJTYPE_CLIENT]);
+                SAFE_FREESOCKOBJ(m_pSockObjs[ESOCKOBJTYPE_CLIENT]);
                 m_bRecvServer = false;
             }
         }
@@ -424,19 +423,9 @@ ISockObj* CNetworkSystem::CreateSockObj(int id)
     return new CSockObj(id, this);
 }
 
-void CNetworkSystem::DeleteSockObj(ISockObj* obj)
+void CNetworkSystem::FreeSockObj(ISockObj* obj)
 {
-    obj->Close();
-    m_vectorDeletedSockObj.push_back(obj);
-}
-
-void CNetworkSystem::FreeDeletedSockObj()
-{
-    for(UINT i = 0; i < m_vectorDeletedSockObj.size(); i++)
-    {
-        SAFE_DELETE(m_vectorDeletedSockObj[i]);
-    }
-    m_vectorDeletedSockObj.clear();
+    delete obj;
 }
 
 void CNetworkSystem::OnAccept(int client)

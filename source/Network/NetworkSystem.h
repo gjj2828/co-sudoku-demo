@@ -73,7 +73,6 @@ private:
         UINT    iDummy          : 25;
     };
 
-    typedef std::vector<ISockObj*> SockObjVector;
     typedef std::vector<INetworkListener*> ListenerVector;
 
     EState                      m_eState;
@@ -97,8 +96,6 @@ private:
 
     ISockObj*                   m_pSockObjs[ESOCKOBJTYPE_MAX];
 
-    SockObjVector               m_vectorDeletedSockObj;
-
     ListenerVector              m_vectorListener;
 
     virtual int HandleEvent(const Event& event);
@@ -111,8 +108,7 @@ private:
     void        ChangeState(EState state);
 
     ISockObj*   CreateSockObj(int id);
-    void        DeleteSockObj(ISockObj* obj);
-    void        FreeDeletedSockObj();
+    void        FreeSockObj(ISockObj* obj);
 
     void        OnAccept(int client);
     void        OnConnect();

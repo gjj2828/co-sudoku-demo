@@ -140,6 +140,7 @@ int CSockObj::Connect(SOCKADDR* remote_addr, int remote_namelen, SOCKADDR* local
 
     m_iBufLen = len;
     m_pBuf = (char*)malloc(m_iBufLen);
+    memcpy(m_pBuf, buf, m_iBufLen);
 
     if(lpfnConnectEx(m_soMain, remote_addr, remote_namelen, m_pBuf, m_iBufLen, &dwBytes, &m_Overlapped[EEVENT_CONNECT]) == FALSE)
     {
@@ -392,7 +393,7 @@ int CSockObj::OnAccept()
         SOCKADDR*   pRemoteAddr;
         int         iLocalAddrLen;
         int         iRemoteAddrLen;
-        m_lpfnGetAcceptExSockaddrs( m_pBuf, sizeof(m_pBuf) - (sizeof(SOCKADDR) + 16) * 2, sizeof(SOCKADDR) + 16, sizeof(SOCKADDR) + 16
+        m_lpfnGetAcceptExSockaddrs( m_pBuf, m_iBufLen, sizeof(SOCKADDR) + 16, sizeof(SOCKADDR) + 16
                                   , (SOCKADDR **)&pLocalAddr, &iLocalAddrLen, (SOCKADDR **)&pRemoteAddr, &iRemoteAddrLen );
         rc = PostEvent(INetworkEventManager::EEVENT_ONACCEPT, NO_ERROR, pLocalAddr, pRemoteAddr, NULL, m_pBuf, m_iBufLen, m_soAccept);
 	}
