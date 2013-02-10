@@ -23,8 +23,6 @@ CGame::CGame()
     ZeroMemory(m_hModules, sizeof(HMODULE) * EMODULE_MAX);
     ZeroMemory(&m_env, sizeof(GlobalEnviroment));
     m_env.pGame = this;
-
-    TestPacket test;
 }
 
 int CGame::Init(HINSTANCE hInstance)
@@ -62,24 +60,7 @@ void CGame::Run()
 
         if(bQuit) break;
 
-        UpdateTimer();
-        m_env.pNetworkSystem->Update(m_fTime);
-
-        static bool s_bFlag = false;
-        if(!s_bFlag && m_eCoType == ECOTYPE_SINGLE && m_fTime > 3.0f)
-        {
-            s_bFlag = true;
-            if(m_env.pNetworkSystem->Start(INetworkSystem::EMODE_AUTOPAIR, m_fTime))
-            {
-                m_eCoType = ECOTYPE_AUTOPAIR;
-                m_eATState = EATSTATE_WAITING;
-                m_env.pNetworkSystem->RegisterListener(this);
-            }
-            else
-            {
-                PRINT("NetworkSystem Start Error!\n");
-            }
-        }
+        Update();
     }
 }
 
@@ -191,6 +172,42 @@ int CGame::InitWindow()
     return 1;
 }
 
+void CGame::Update()
+{
+    UpdateTimer();
+    m_env.pNetworkSystem->Update(m_fTime);
+
+    static bool s_bFlag = false;
+    static float s_fWait = 0.0f;
+    if(!s_bFlag && m_eCoType == ECOTYPE_SINGLE && m_fTime > 3.0f)
+    {
+        s_bFlag = true;
+        if(m_env.pNetworkSystem->Start(INetworkSystem::EMODE_AUTOPAIR, m_fTime))
+        {
+            m_eCoType = ECOTYPE_AUTOPAIR;
+            m_eATState = EATSTATE_WAITING;
+            m_env.pNetworkSystem->RegisterListener(this);
+            srand(GetTickCount());
+            s_fWait = m_fTime + rand() * 5.0f / RAND_MAX;
+        }
+        else
+        {
+            PRINT("NetworkSystem Start Error!\n");
+        }
+    }
+    if(m_eCoType == ECOTYPE_AUTOPAIR && (m_eATState == EATSTATE_HOST || m_eATState == EATSTATE_CLIENT))
+    {
+        if(m_fTime > s_fWait)
+        {
+            Test1Packet packet;
+            packet.val = m_fTime;
+            m_env.pNetworkSystem->Send(&packet);
+            PRINT("SendTest1: %f\n", packet.val);
+            s_fWait = m_fTime + rand() * 5.0f / RAND_MAX;
+        }
+    }
+}
+
 int CGame::InitTimer()
 {
     m_pTimer = new CPrecisionTimer;
@@ -214,11 +231,49 @@ void CGame::UpdateTimer()
 void CGame::OnAccept(int client)
 {
     PRINT("OnAccept client: %d\n", client);
+
+    if(m_eATState == EATSTATE_WAITING) m_eATState = EATSTATE_HOST;
+    Test2Packet packet;
+    packet.val = m_fTime;
+    m_env.pNetworkSystem->Send(&packet, client);
+    PRINT("SendTest2: %f\n", packet.val);
 }
 
 void CGame::OnConnect()
 {
     PRINT("OnConnect\n");
+
+    if(m_eATState == EATSTATE_WAITING) m_eATState = EATSTATE_CLIENT;
+}
+
+void CGame::OnRecv(Packet* pPacket)
+{
+    switch(pPacket->type)
+    {
+    case EPACKETTYPE_TEST1:
+        PRINT("RecvTest1: %f\n", ((Test1Packet*)pPacket)->val);
+        break;
+    case EPACKETTYPE_TEST2:
+        PRINT("RecvTest2: %f\n", ((Test2Packet*)pPacket)->val);
+        break;
+    default:
+        PRINT("Recv Unknown packet!\n");
+        break;
+    }
+}
+
+void CGame::OnDisconnect()
+{
+    PRINT("OnDisconnect\n");
+
+    m_eATState = EATSTATE_WAITING;
+}
+
+void CGame::OnStop()
+{
+    PRINT("OnStop\n");
+
+    m_eCoType = ECOTYPE_SINGLE;
 }
 
 LRESULT CGame::WndProc(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam)

@@ -51,19 +51,31 @@ private:
     enum EPacketType
     {
         EPACKETTYPE_MIN,
-        EPACKETTYPE_TEST = EPACKETTYPE_MIN,
+        EPACKETTYPE_TEST1 = EPACKETTYPE_MIN,
+        EPACKETTYPE_TEST2,
         EPACKETTYPE_MAX,
     };
 
-    struct TestPacket : public Packet
+    struct Test1Packet : public Packet
     {
-        TestPacket()
+        Test1Packet()
         {
             size = sizeof(*this);
-            type = EPACKETTYPE_TEST;
+            type = EPACKETTYPE_TEST1;
         }
 
-        int test;
+        float val;
+    };
+
+    struct Test2Packet : public Packet
+    {
+        Test2Packet()
+        {
+            size = sizeof(*this);
+            type = EPACKETTYPE_TEST2;
+        }
+
+        float val;
     };
 
     HINSTANCE           m_hInstance;
@@ -82,11 +94,15 @@ private:
 
     int     LoadDll();
     int     InitWindow();
+    void    Update();
     int     InitTimer();
     void    UpdateTimer();
 
     virtual void OnAccept(int client);
     virtual void OnConnect();
+    virtual void OnRecv(Packet* pPacket);
+    virtual void OnDisconnect();
+    virtual void OnStop();
 
     static const float m_cSPF;
     static const char* m_cClassName;

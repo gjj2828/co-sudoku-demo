@@ -6,7 +6,8 @@ extern "C"
 {
     DLL_EXPORT IGame* CreateGame()
     {
-        IGame* pGame = new CGame;
+        static char buffer[sizeof(CGame)];
+        IGame* pGame = new ((void*)buffer) CGame();;
         ModuleInit(pGame->GetEnv());
         return pGame;
     }

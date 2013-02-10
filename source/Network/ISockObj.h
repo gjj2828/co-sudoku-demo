@@ -20,6 +20,7 @@ public:
     virtual int     Send(Packet* packet, SOCKADDR* addr = NULL, int namelen = 0)                                                    = 0;
     virtual int     Update()                                                                                                        = 0;
     virtual void    Close()                                                                                                         = 0;
+    virtual void    Release()                                                                                                       = 0;
 };
 
 #endif // __ISOCKOBJ_H__

@@ -11,12 +11,6 @@
     }                       \
 }
 
-#define SAFE_FREESOCKOBJ(p) \
-{                           \
-    if(p) FreeSockObj(p);   \
-    (p) = NULL;             \
-}
-
 #define STOP_RTN0   \
 {                   \
     Stop();  \
@@ -107,7 +101,7 @@ void CNetworkSystem::Stop()
     ChangeState(ESTATE_STOP);
     for(int i = 0; i < ESOCKOBJTYPE_MAX; i++)
     {
-        SAFE_FREESOCKOBJ(m_pSockObjs[i]);
+        SAFE_RELEASE(m_pSockObjs[i]);
     }
     OnStop();
 }
@@ -134,7 +128,7 @@ int CNetworkSystem::Update(float time)
                 }
                 else
                 {
-                    SAFE_FREESOCKOBJ(m_pSockObjs[i]);
+                    SAFE_RELEASE(m_pSockObjs[i]);
                 }
             }
         }
@@ -199,7 +193,7 @@ int CNetworkSystem::HandleEvent(const Event& event)
         {
             int empty;
             if(!FindEmptyCoClient(empty)) return -1;
-            m_pSockObjs[ESOCKOBJTYPE_COCLIENT_MIN + empty] = CreateSockObj(empty);
+            m_pSockObjs[ESOCKOBJTYPE_COCLIENT_MIN + empty] = CreateSockObj(ESOCKOBJTYPE_COCLIENT_MIN + empty);
             m_pSockObjs[ESOCKOBJTYPE_COCLIENT_MIN + empty]->Accept(event.soAccept);
             if(m_eState == ESTATE_WAITING) ChangeState(ESTATE_HOST);
             m_iCoClientNum++;
@@ -332,6 +326,7 @@ int CNetworkSystem::HandleEvent(const Event& event)
     case EEVENT_BINDFAIL:
     case EEVENT_LISTENFAIL:
     case EEVENT_SETBROADCASTFAIL:
+    case EEVENT_SETKEEPALIVETFAIL:
     case EEVENT_POSTCONNECTFAIL:
     case EEVENT_POSTACCEPTFAIL:
     case EEVENT_POSTSENDFAIL:
@@ -367,7 +362,7 @@ void CNetworkSystem::BroadCastCheckInfo()
             }
             else
             {
-                SAFE_FREESOCKOBJ(m_pSockObjs[ESOCKOBJTYPE_CLIENT]);
+                SAFE_RELEASE(m_pSockObjs[ESOCKOBJTYPE_CLIENT]);
                 m_bRecvServer = false;
             }
         }
@@ -421,11 +416,6 @@ void CNetworkSystem::ChangeState(EState state)
 ISockObj* CNetworkSystem::CreateSockObj(int id)
 {
     return new CSockObj(id, this);
-}
-
-void CNetworkSystem::FreeSockObj(ISockObj* obj)
-{
-    delete obj;
 }
 
 void CNetworkSystem::OnAccept(int client)

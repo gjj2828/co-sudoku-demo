@@ -108,7 +108,6 @@ private:
     void        ChangeState(EState state);
 
     ISockObj*   CreateSockObj(int id);
-    void        FreeSockObj(ISockObj* obj);
 
     void        OnAccept(int client);
     void        OnConnect();

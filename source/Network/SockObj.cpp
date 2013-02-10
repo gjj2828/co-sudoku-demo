@@ -1,5 +1,6 @@
 #include "StdAfx.h"
 #include "SockObj.h"
+#include <MSTcpIP.h>
 
 CSockObj::CSockObj(int id, INetworkEventManager* event_manager)
  : m_iId(id)
@@ -29,11 +30,6 @@ CSockObj::CSockObj(int id, INetworkEventManager* event_manager)
     m_pEventFunc[EEVENT_RECV]       = &CSockObj::OnRecv;
 }
 
-CSockObj::~CSockObj()
-{
-    Close();
-}
-
 int CSockObj::Listen(ESockType type, SOCKADDR* addr, int namelen, int buf_len, int backlog)
 {
     if(m_soMain != INVALID_SOCKET) return PostEvent(INetworkEventManager::EEVENT_SOCKETALREADEXIST, -1); 
@@ -43,6 +39,7 @@ int CSockObj::Listen(ESockType type, SOCKADDR* addr, int namelen, int buf_len, i
     case ESOCKTYPE_TCP:
         {
             DWORD dwBytes;
+            int rc;
 
             GUID guidAcceptEx = WSAID_ACCEPTEX;
             GUID guidGetAcceptExSockaddrs = WSAID_GETACCEPTEXSOCKADDRS;
@@ -73,6 +70,9 @@ int CSockObj::Listen(ESockType type, SOCKADDR* addr, int namelen, int buf_len, i
                        , &dwBytes
                        , NULL
                        , NULL ) == SOCKET_ERROR) return PostEvent(INetworkEventManager::EEVENT_LISTENFAIL, WSAGetLastError());
+
+            rc = SetKeepAlive();
+            if(rc != NO_ERROR) return PostEvent(INetworkEventManager::EEVENT_SETKEEPALIVETFAIL, rc);
 
             m_eSockType = ESOCKTYPE_TCP;
             m_iBufLen = buf_len;
@@ -138,6 +138,9 @@ int CSockObj::Connect(SOCKADDR* remote_addr, int remote_namelen, SOCKADDR* local
                 , NULL
                 , NULL ) == SOCKET_ERROR ) return PostEvent(INetworkEventManager::EEVENT_POSTCONNECTFAIL, WSAGetLastError());
 
+    rc = SetKeepAlive();
+    if(rc != NO_ERROR) return PostEvent(INetworkEventManager::EEVENT_SETKEEPALIVETFAIL, rc);
+
     m_iBufLen = len;
     m_pBuf = (char*)malloc(m_iBufLen);
     memcpy(m_pBuf, buf, m_iBufLen);
@@ -159,8 +162,11 @@ int CSockObj::Send(Packet* packet, SOCKADDR* addr, int namelen)
 
     pData->packet = (Packet*)malloc(packet->size);
     memcpy(pData->packet, packet, packet->size);
-    memcpy(&pData->addr, addr, sizeof(SOCKADDR));
-    pData->namelen = namelen;
+    if(addr != NULL)
+    {
+        memcpy(&pData->addr, addr, sizeof(SOCKADDR));
+        pData->namelen = namelen;
+    }
 
     m_queSendData.push_back(pData);
 
@@ -220,6 +226,12 @@ void CSockObj::Close()
     {
         WSAResetEvent(m_hEvents[i]);
     }
+}
+
+void CSockObj::Release()
+{
+    Close();
+    delete this;
 }
 
 int CSockObj::PostAccept()
@@ -528,6 +540,7 @@ int CSockObj::OnRecv(int bytes)
             }
             break;
         }
+        break;
     case ESOCKTYPE_UDP:
         {
             Packet* pPacket = (Packet*)m_pBuf;
@@ -547,6 +560,24 @@ int CSockObj::OnRecv(int bytes)
         }
         break;
     }
+
+    return NO_ERROR;
+}
+
+int CSockObj::SetKeepAlive()
+{
+    DWORD dwBytes;
+
+    BOOL keepalive = TRUE;
+    if(setsockopt(m_soMain, SOL_SOCKET, SO_KEEPALIVE, (char*)&keepalive, sizeof(keepalive)) == SOCKET_ERROR) return WSAGetLastError();
+
+    tcp_keepalive klin = {0};
+    tcp_keepalive klout = {0};
+    klin.onoff              = 1;
+    klin.keepalivetime      = 500;
+    klin.keepaliveinterval  = 100;
+    dwBytes                 = 0;
+    if(WSAIoctl(m_soMain, SIO_KEEPALIVE_VALS, &klin, sizeof(klin), &klout, sizeof(klout), &dwBytes, NULL, NULL) == SOCKET_ERROR) return WSAGetLastError();
 
     return NO_ERROR;
 }

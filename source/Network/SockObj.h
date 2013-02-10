@@ -9,7 +9,6 @@ class CSockObj : public ISockObj
 {
 public:
     CSockObj(int id, INetworkEventManager* event_manager);
-    ~CSockObj();
 
     virtual int     GetId() {return m_iId;}
     virtual int     Listen(ESockType type, SOCKADDR* addr, int namelen, int buf_len, int backlog);
@@ -18,8 +17,7 @@ public:
     virtual int     Send(Packet* packet, SOCKADDR* addr, int namelen);
     virtual int     Update();
     virtual void    Close();
-
-private:
+    virtual void    Release();
 
 private:
     enum EEvent
@@ -94,6 +92,8 @@ private:
 	int OnSend();
 	int OnRecv();
     int OnRecv(int bytes);
+
+    int SetKeepAlive();
 };
 
 #endif // __SOCKOBJ_H__
