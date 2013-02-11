@@ -4,3 +4,5 @@ BinTemp/
 *.suo
 *.user
 *.aps
+DataBase/*.db
+DataBase/*.def
