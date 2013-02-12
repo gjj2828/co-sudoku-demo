@@ -14,7 +14,7 @@ public:
     {
         INVALID_GRID = 0xffff,
     };
-    virtual int GetGrid(POINT pos) = 0;
+    virtual void GetGrid(POINT pos, int& grid, int& sgrid) = 0;
 };
 
 #endif // __IGRIDMANAGER_H__

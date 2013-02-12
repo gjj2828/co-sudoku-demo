@@ -19,6 +19,7 @@ public:
         WLW     = 2,
         SGW     = 16,
         SGGLN   = 3,
+        SGGAN   = SGGLN * SGGLN,
         GW      = SGW * SGGLN,
         GBGLN   = 3,
         GBGAN   = GBGLN * GBGLN,
@@ -44,8 +45,8 @@ public:
 private:
     struct GridData
     {
-        RECT    rect;
-        int     num;
+        RECT rect;
+        RECT sg_rect[SGGAN];
     };
     struct LineData
     {
@@ -63,6 +64,7 @@ private:
     HBRUSH      m_hbUnChoiced;
 
     HFONT       m_hFont;
+    HFONT       m_hSFont;
 
     POINT       m_Start;
     GridData    m_Grids[GAN];

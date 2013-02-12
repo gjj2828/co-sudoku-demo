@@ -42,6 +42,7 @@ int CRenderSystem::Init(HWND hwnd, IGridManager*& gm)
     m_hbUnChoiced   = CreateSolidBrush(COL_WHITE);
 
     m_hFont         = CreateFont(GW, 0, 0, 0, FW_NORMAL, false, false, false, GB2312_CHARSET, OUT_CHARACTER_PRECIS, CLIP_CHARACTER_PRECIS, DEFAULT_QUALITY, FF_MODERN, NULL);
+    m_hSFont        = CreateFont(SGW, 0, 0, 0, FW_NORMAL, false, false, false, GB2312_CHARSET, OUT_CHARACTER_PRECIS, CLIP_CHARACTER_PRECIS, DEFAULT_QUALITY, FF_MODERN, NULL);
 
     m_Start.x = m_ClientRect.left + (width - W) / 2;
     m_Start.y = m_ClientRect.top + (hight - W) / 2;
@@ -101,6 +102,20 @@ int CRenderSystem::Init(HWND hwnd, IGridManager*& gm)
 
                     //m_Grids[index].hrgn = CreateRectRgnIndirect(&(m_Grids[index].rect));
                     pGridManager->SetGridRGN(index, CreateRectRgnIndirect(&(m_Grids[index].rect)));
+
+                    for(int m = 0; m < SGGLN; m++)
+                    {
+                        for(int n = 0; n < SGGLN; n++)
+                        {
+                            int sg_index = m * SGGLN + n;
+                            m_Grids[index].sg_rect[sg_index].top    = m_Grids[index].rect.top + SGW * m;
+                            m_Grids[index].sg_rect[sg_index].left   = m_Grids[index].rect.left + SGW * n;
+                            m_Grids[index].sg_rect[sg_index].bottom = m_Grids[index].sg_rect[sg_index].top + SGW;
+                            m_Grids[index].sg_rect[sg_index].right  = m_Grids[index].sg_rect[sg_index].left + SGW;
+                            pGridManager->SetSGridRGN(index, sg_index, CreateRectRgnIndirect(&m_Grids[index].sg_rect[sg_index]));
+                        }
+                    }
+
                 }
             }
         }
@@ -119,6 +134,7 @@ void CRenderSystem::Release()
     SAFE_DELETEOBJECT(m_hbChoiced);
     SAFE_DELETEOBJECT(m_hbUnChoiced);
     SAFE_DELETEOBJECT(m_hFont);
+    SAFE_DELETEOBJECT(m_hSFont);
 
     this->~CRenderSystem();
 }
@@ -170,7 +186,17 @@ void CRenderSystem::DrawGrid(HDC hdc, int grid)
 
     SetBkMode(hdc, TRANSPARENT);
     FillRect(hdc, &(m_Grids[grid].rect), hpBrush);
-    SelectObject(hdc, m_hFont);
-    char num = '0' + m_Grids[grid].num;
-    DrawText(hdc, &num, 1, &(m_Grids[grid].rect), DT_CENTER | DT_VCENTER);
+    //SelectObject(hdc, m_hFont);
+    //char num = '0';
+    //DrawText(hdc, &num, 1, &(m_Grids[grid].rect), DT_CENTER | DT_VCENTER);
+    for(int i = 0; i < SGGLN; i++)
+    {
+        for(int j = 0; j < SGGLN; j++)
+        {
+            int sgrid = i * SGGLN + j;
+            SelectObject(hdc, m_hSFont);
+            char num = '0' + sgrid + 1;
+            DrawText(hdc, &num, 1, &(m_Grids[grid].sg_rect[sgrid]), DT_CENTER | DT_VCENTER);
+        }
+    }
 }

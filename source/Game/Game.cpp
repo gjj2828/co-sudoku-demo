@@ -39,8 +39,8 @@ int CGame::Init(HINSTANCE hInstance)
     if(!LoadDll())      return 0;
     if(!InitTimer())    return 0;
 
-    //ShowWindow(m_hWnd, SW_NORMAL);
-    //UpdateWindow(m_hWnd);
+    ShowWindow(m_hWnd, SW_NORMAL);
+    UpdateWindow(m_hWnd);
 
     return 1;
 }
@@ -92,9 +92,11 @@ void CGame::Paint()
     GetCursorPos(&pos);
     ScreenToClient(m_hWnd, &pos);
 
-    m_iSelectedGrid = m_pGridManager->GetGrid(pos);
+    int grid, sgrid;
 
-    m_env.pRenderSystem->SetSelectedGrid(m_iSelectedGrid);
+    m_pGridManager->GetGrid(pos, grid, sgrid);
+
+    m_env.pRenderSystem->SetSelectedGrid(grid);
     m_env.pRenderSystem->Update();
 }
 
@@ -102,7 +104,10 @@ void CGame::MouseMove(int x, int y)
 {
     POINT pos = {x, y};
 
-    int grid = m_pGridManager->GetGrid(pos);
+    int grid, sgrid;
+
+    m_pGridManager->GetGrid(pos, grid, sgrid);
+
     if(grid == m_iSelectedGrid) return;
 
     m_env.pRenderSystem->SetSelectedGrid(grid);
