@@ -17,7 +17,7 @@ public:
     virtual void                Release()                   = 0;
     virtual GlobalEnviroment*   GetEnv()                    = 0;
     virtual void                Paint()                     = 0;
-    virtual void                MouseMove(int x, int y)     = 0;
+    //virtual void                MouseMove(int x, int y)     = 0;
 };
 
 #endif // __IGAME_H__

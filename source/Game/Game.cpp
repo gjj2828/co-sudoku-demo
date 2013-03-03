@@ -100,22 +100,22 @@ void CGame::Paint()
     m_env.pRenderSystem->Update();
 }
 
-void CGame::MouseMove(int x, int y)
-{
-    POINT pos = {x, y};
-
-    int grid, sgrid;
-
-    m_pGridManager->GetGrid(pos, grid, sgrid);
-
-    if(grid == m_iSelectedGrid) return;
-
-    m_env.pRenderSystem->SetSelectedGrid(grid);
-    m_env.pRenderSystem->Update(m_iSelectedGrid);
-    m_env.pRenderSystem->Update(grid);
-
-    m_iSelectedGrid = grid;
-}
+//void CGame::MouseMove(int x, int y)
+//{
+//    POINT pos = {x, y};
+//
+//    int grid, sgrid;
+//
+//    m_pGridManager->GetGrid(pos, grid, sgrid);
+//
+//    if(grid == m_iSelectedGrid) return;
+//
+//    m_env.pRenderSystem->SetSelectedGrid(grid);
+//    m_env.pRenderSystem->Update(m_iSelectedGrid);
+//    m_env.pRenderSystem->Update(grid);
+//
+//    m_iSelectedGrid = grid;
+//}
 
 int CGame::LoadDll()
 {
@@ -186,6 +186,7 @@ int CGame::InitWindow()
 void CGame::Update()
 {
     UpdateTimer();
+    UpdateRenderFocus();
     m_env.pNetworkSystem->Update(m_fTime);
 
     static bool s_bFlag = false;
@@ -237,6 +238,29 @@ void CGame::UpdateTimer()
     if(dt < m_cSPF) Sleep((DWORD)((m_cSPF - dt) * 1000.0f));
 
     m_fTime = m_pTimer->GetTime();
+}
+
+void CGame::UpdateRenderFocus()
+{
+    int grid, sgrid;
+    GetFocusGrid(grid, sgrid);
+
+    if(grid == m_iSelectedGrid) return;
+
+    m_env.pRenderSystem->SetSelectedGrid(grid);
+    m_env.pRenderSystem->Update(m_iSelectedGrid);
+    m_env.pRenderSystem->Update(grid);
+
+    m_iSelectedGrid = grid;
+}
+
+void CGame::GetFocusGrid(int& grid, int& sgrid)
+{
+    POINT pos;
+    GetCursorPos(&pos);
+    ScreenToClient(m_hWnd, &pos);
+
+    m_pGridManager->GetGrid(pos, grid, sgrid);
 }
 
 void CGame::OnAccept(int client)
@@ -308,9 +332,9 @@ LRESULT CGame::WndProc(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam)
     case WM_PAINT:
         gEnv->pGame->Paint();
         break;
-    case WM_MOUSEMOVE:
-        gEnv->pGame->MouseMove(LOWORD(lparam), HIWORD(lparam));
-        break;
+    //case WM_MOUSEMOVE:
+    //    gEnv->pGame->MouseMove(LOWORD(lparam), HIWORD(lparam));
+    //    break;
     case WM_DESTROY:
         PostQuitMessage(0);
         break;

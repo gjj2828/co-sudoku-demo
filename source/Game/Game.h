@@ -21,7 +21,7 @@ public:
     virtual void                Release();
     virtual GlobalEnviroment*   GetEnv() {return &m_env;}
     virtual void                Paint();
-    virtual void                MouseMove(int x, int y);
+    //virtual void                MouseMove(int x, int y);
 
 private:
     enum EModule
@@ -103,6 +103,9 @@ private:
     void    Update();
     int     InitTimer();
     void    UpdateTimer();
+    void    UpdateRenderFocus();
+
+    void    GetFocusGrid(int& grid, int& sgrid);
 
     virtual void OnAccept(int client);
     virtual void OnConnect();
