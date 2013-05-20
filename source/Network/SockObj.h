@@ -5,21 +5,21 @@
 #include "INetworkEventManager.h"
 #include "ISockObj.h"
 
-class CSockObj : public ISockObj
+class TSockObj : public ISockObj
 {
 public:
-    CSockObj(int id, INetworkEventManager* event_manager);
+    TSockObj(int id, INetworkEventManager* event_manager);
 
     virtual int     GetId() {return m_iId;}
-    virtual int     Listen(ESockType type, SOCKADDR* addr, int namelen, int buf_len, int backlog);
-    virtual int     Accept(SOCKET sock);
-    virtual int     Connect(SOCKADDR* remote_addr, int remote_namelen, SOCKADDR* local_addr, int local_namelen, char* buf, int len);
+    virtual int     Listen(SOCKADDR* addr, int namelen, int buf_len, int backlog, bool is_broadcast) = 0;
+    virtual int     Accept(SOCKET sock) {return -1;}
+    virtual int     Connect(SOCKADDR* remote_addr, int remote_namelen, SOCKADDR* local_addr, int local_namelen, char* buf, int len) {return -1;}
     virtual int     Send(Packet* packet, SOCKADDR* addr, int namelen);
     virtual int     Update();
     virtual void    Close();
     virtual void    Release();
 
-private:
+protected:
     enum EEvent
     {
         EEVENT_MIN,
@@ -29,6 +29,7 @@ private:
         EEVENT_RECV,
         EEVENT_MAX,
     };
+
     enum ERecvStep
     {
         ERECVSTEP_MIN,
@@ -36,15 +37,6 @@ private:
         ERECVSTEP_PACKET,
         ERECVSTEP_MAX,
     };
-    //enum ETcpType
-    //{
-    //    ETCPTYPE_MIN,
-    //    ETCPTYPE_UNDECIDED = ETCPTYPE_MIN,
-    //    ETCPTYPE_LISTEN,
-    //    ETCPTYPE_ACCEPT,
-    //    ETCPTYPE_CONNECT,
-    //    ETCPTYPE_MAX,
-    //};
 
     struct SendData
     {
@@ -56,44 +48,86 @@ private:
     };
 
     typedef std::deque<SendData*> SendDataQue;
-    typedef int (CSockObj::*EventFunc)();
 
-    int                         m_iId;
-    ESockType                   m_eSockType;
-    //ETcpType                    m_eTcpType;
     SOCKET                      m_soMain;
-    HANDLE                      m_hEvents[EEVENT_MAX];
-    WSAOVERLAPPED               m_Overlapped[EEVENT_MAX];
-    LPFN_ACCEPTEX               m_lpfnAcceptEx;
-    LPFN_GETACCEPTEXSOCKADDRS   m_lpfnGetAcceptExSockaddrs;
-    INetworkEventManager*       m_pEventManager;
-    SOCKET                      m_soAccept;
     char*                       m_pBuf;
     int                         m_iBufLen;
-    SendDataQue                 m_queSendData;
-    bool                        m_bConnecting;
+    HANDLE                      m_hEvents[EEVENT_MAX];
+    WSAOVERLAPPED               m_Overlapped[EEVENT_MAX];
     bool                        m_bSending;
     bool                        m_bRecving;
+    SendDataQue                 m_queSendData;
+
+    int PostSend();
+    int PostEvent( INetworkEventManager::EEvent event, int ret = NO_ERROR, SOCKADDR* local = NULL, SOCKADDR* remote = NULL
+        , Packet* packet = NULL, char* buf = NULL, int buf_len = 0, SOCKET sock = INVALID_SOCKET );
+
+private:
+    typedef int (TSockObj::*EventFunc)();
+
+    int                     m_iId;
+    INetworkEventManager*   m_pEventManager;
+    EventFunc               m_pEventFunc[EEVENT_MAX];
+
+    virtual int PostAccept()    {return -1;}
+    virtual int OnAccept()      {return -1;}
+    virtual int OnConnect()     {return -1;}
+    virtual int OnSend()        {return -1;}
+	virtual int OnRecv()        {return -1;}
+
+    virtual int PostSendData(SendData* data_ptr)    = 0;
+    virtual int PostRecv()                          = 0;
+    virtual int OnRecv(int bytes)                   = 0;
+
+};
+
+class CTcpSockObj : public TSockObj
+{
+public:
+    CTcpSockObj(int id, INetworkEventManager* event_manager);
+
+    virtual int     Listen(SOCKADDR* addr, int namelen, int buf_len, int backlog, bool is_broadcast);
+    virtual int     Accept(SOCKET sock);
+    virtual int     Connect(SOCKADDR* remote_addr, int remote_namelen, SOCKADDR* local_addr, int local_namelen, char* buf, int len);
+    virtual void    Close();
+
+private:
+    SOCKET                      m_soAccept;
+    LPFN_ACCEPTEX               m_lpfnAcceptEx;
+    LPFN_GETACCEPTEXSOCKADDRS   m_lpfnGetAcceptExSockaddrs;
     ERecvStep                   m_eRecvStep;
     int                         m_iOffset;
     psize_t                     m_iSize;
     Packet*                     m_pRecvPacket;
-    SOCKADDR                    m_RecvAddr;
-    int                         m_iRecvAddrSize;
-    EventFunc                   m_pEventFunc[EEVENT_MAX];
 
-    int PostAccept();
-    int PostSend();
-    int PostRecv();
-    int PostEvent( INetworkEventManager::EEvent event, int ret = NO_ERROR, SOCKADDR* local = NULL, SOCKADDR* remote = NULL
-                 , Packet* packet = NULL, char* buf = NULL, int buf_len = 0, SOCKET sock = INVALID_SOCKET );
-	int OnAccept();
-	int OnConnect();
-	int OnSend();
-	int OnRecv();
-    int OnRecv(int bytes);
+    virtual int PostAccept();
+    virtual int OnAccept();
+    virtual int OnConnect();
+    virtual int OnSend();
+    virtual int OnRecv();
+    virtual int PostSendData(SendData* data_ptr);
+    virtual int PostRecv();
+    virtual int OnRecv(int bytes);
 
     int SetKeepAlive();
+};
+
+class CUdpSockObj : public TSockObj
+{
+public:
+    CUdpSockObj(int id, INetworkEventManager* event_manager);
+
+    virtual int Listen(SOCKADDR* addr, int namelen, int buf_len, int backlog, bool is_broadcast);
+
+private:
+    SOCKADDR    m_RecvAddr;
+    int         m_iRecvAddrSize;
+
+    virtual int OnSend();
+    virtual int OnRecv();
+    virtual int PostSendData(SendData* data_ptr);
+    virtual int PostRecv();
+    virtual int OnRecv(int bytes);
 };
 
 #endif // __SOCKOBJ_H__

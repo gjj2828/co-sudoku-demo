@@ -84,13 +84,13 @@ int CNetworkSystem::Start(EMode mode, float time)
 
     ChangeState(ESTATE_WAITING);
 
-    m_pSockObjs[ESOCKOBJTYPE_LISTEN] = CreateSockObj(ESOCKOBJTYPE_LISTEN);
-    if(m_pSockObjs[ESOCKOBJTYPE_LISTEN]->Listen(ISockObj::ESOCKTYPE_TCP, (SOCKADDR*)&m_ListenBindAddr
-        , sizeof(m_ListenBindAddr), GAMENAME_LEN, 5) != NO_ERROR) STOP_RTN0;
+    m_pSockObjs[ESOCKOBJTYPE_LISTEN] = CreateTcpSockObj(ESOCKOBJTYPE_LISTEN);
+    if(m_pSockObjs[ESOCKOBJTYPE_LISTEN]->Listen((SOCKADDR*)&m_ListenBindAddr
+        , sizeof(m_ListenBindAddr), GAMENAME_LEN) != NO_ERROR) STOP_RTN0;
 
-    m_pSockObjs[ESOCKOBJTYPE_BROADCAST] = CreateSockObj(ESOCKOBJTYPE_BROADCAST);
-    if(m_pSockObjs[ESOCKOBJTYPE_BROADCAST]->Listen(ISockObj::ESOCKTYPE_UDP, (SOCKADDR*)&m_BroadCastBindAddr
-        , sizeof(m_BroadCastBindAddr), sizeof(BroadCastPacket)) != NO_ERROR) STOP_RTN0;
+    m_pSockObjs[ESOCKOBJTYPE_BROADCAST] = CreateUdpSockObj(ESOCKOBJTYPE_BROADCAST);
+    if(m_pSockObjs[ESOCKOBJTYPE_BROADCAST]->Listen((SOCKADDR*)&m_BroadCastBindAddr
+        , sizeof(m_BroadCastBindAddr), sizeof(BroadCastPacket), 0, true) != NO_ERROR) STOP_RTN0;
 
     return 1;
 }
@@ -193,7 +193,7 @@ int CNetworkSystem::HandleEvent(const Event& event)
         {
             int empty;
             if(!FindEmptyCoClient(empty)) return -1;
-            m_pSockObjs[ESOCKOBJTYPE_COCLIENT_MIN + empty] = CreateSockObj(ESOCKOBJTYPE_COCLIENT_MIN + empty);
+            m_pSockObjs[ESOCKOBJTYPE_COCLIENT_MIN + empty] = CreateTcpSockObj(ESOCKOBJTYPE_COCLIENT_MIN + empty);
             m_pSockObjs[ESOCKOBJTYPE_COCLIENT_MIN + empty]->Accept(event.soAccept);
             if(m_eState == ESTATE_WAITING) ChangeState(ESTATE_HOST);
             m_iCoClientNum++;
@@ -354,7 +354,7 @@ void CNetworkSystem::BroadCastCheckInfo()
             char buf[GAMENAME_LEN];
             strcpy_s(buf, GAMENAME_LEN, GAME_NAME);
 
-            m_pSockObjs[ESOCKOBJTYPE_CLIENT] = CreateSockObj(ESOCKOBJTYPE_CLIENT);
+            m_pSockObjs[ESOCKOBJTYPE_CLIENT] = CreateTcpSockObj(ESOCKOBJTYPE_CLIENT);
             if(m_pSockObjs[ESOCKOBJTYPE_CLIENT]->Connect((SOCKADDR*)&ServerAddr, sizeof(ServerAddr), (SOCKADDR*)&m_ClientBindAddr
                 , sizeof(m_ClientBindAddr), buf, GAMENAME_LEN) == NO_ERROR)
             {
@@ -413,9 +413,14 @@ void CNetworkSystem::ChangeState(EState state)
     m_eState = state;
 }
 
-ISockObj* CNetworkSystem::CreateSockObj(int id)
+ISockObj* CNetworkSystem::CreateTcpSockObj(int id)
 {
-    return new CSockObj(id, this);
+    return new CTcpSockObj(id, this);
+}
+
+ISockObj* CNetworkSystem::CreateUdpSockObj(int id)
+{
+    return new CUdpSockObj(id, this);
 }
 
 void CNetworkSystem::OnAccept(int client)

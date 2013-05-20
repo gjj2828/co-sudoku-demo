@@ -107,7 +107,8 @@ private:
 
     void        ChangeState(EState state);
 
-    ISockObj*   CreateSockObj(int id);
+    ISockObj*   CreateTcpSockObj(int id);
+    ISockObj*   CreateUdpSockObj(int id);
 
     void        OnAccept(int client);
     void        OnConnect();
