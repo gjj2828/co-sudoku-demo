@@ -1,3 +1,9 @@
+//**************************************************
+//File: Timer.cpp
+//Author: GaoJiongjiong
+//Function: сно╥й╠╪Д
+//**************************************************
+
 #include "StdAfx.h"
 #include "Timer.h"
 

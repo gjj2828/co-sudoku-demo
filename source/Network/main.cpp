@@ -1,3 +1,9 @@
+//**************************************************
+//File: main.cpp
+//Author: GaoJiongjiong
+//Function: ÍøÂçÄ£¿é
+//**************************************************
+
 #include "StdAfx.h"
 #include "NetworkSystem.h"
 

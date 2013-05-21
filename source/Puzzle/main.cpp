@@ -1,3 +1,9 @@
+//**************************************************
+//File: main.cpp
+//Author: GaoJiongjiong
+//Function: ¹Ø¿¨Ä£¿é
+//**************************************************
+
 #include "StdAfx.h"
 #include "PuzzleSystem.h"
 

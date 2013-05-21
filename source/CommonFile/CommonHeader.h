@@ -1,3 +1,9 @@
+//**************************************************
+//File: CommonHeader.h
+//Author: GaoJiongjiong
+//Function: 通用头文件
+//**************************************************
+
 #ifndef __COMMONHEADER_H__
 #define __COMMONHEADER_H__
 

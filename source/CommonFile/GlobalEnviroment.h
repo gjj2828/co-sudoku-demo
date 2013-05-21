@@ -1,3 +1,9 @@
+//**************************************************
+//File: GlobalEnviroment.h
+//Author: GaoJiongjiong
+//Function: 全局环境变量
+//**************************************************
+
 #ifndef __GLOBALENVIROMENT_H__
 #define __GLOBALENVIROMENT_H__
 

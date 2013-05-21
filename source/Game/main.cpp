@@ -1,3 +1,9 @@
+//**************************************************
+//File: main.cpp
+//Author: GaoJiongjiong
+//Function: ÓÎÏ·Ö÷Ìå
+//**************************************************
+
 #include "StdAfx.h"
 #include <CommonModule.h>
 #include "Game.h"

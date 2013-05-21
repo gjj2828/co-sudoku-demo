@@ -1,3 +1,9 @@
+//**************************************************
+//File: CommonModule.h
+//Author: GaoJiongjiong
+//Function: 模块间通用内容
+//**************************************************
+
 #ifndef __COMMONMODULE_H__
 #define __COMMONMODULE_H__
 

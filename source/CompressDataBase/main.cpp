@@ -1,3 +1,9 @@
+//**************************************************
+//File: main.cpp
+//Author: GaoJiongjiong
+//Function: Ñ¹Ëõ¹Ø¿¨Êý¾Ý¿â
+//**************************************************
+
 #include "StdAfx.h"
 
 typedef ICompression* (*CreateCompression)();

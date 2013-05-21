@@ -1,3 +1,9 @@
+//**************************************************
+//File: CompressionHeader.h
+//Author: GaoJiongjiong
+//Function: 关卡压缩头文件
+//**************************************************
+
 #ifndef __COMPRESSIONHEADER_H__
 #define __COMPRESSIONHEADER_H__
 

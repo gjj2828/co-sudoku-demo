@@ -1,3 +1,9 @@
+//**************************************************
+//File: NetworkSystem.h
+//Author: GaoJiongjiong
+//Function: ÍøÂçÄ£¿é
+//**************************************************
+
 #ifndef __NETWORKSYSTEM_H__
 #define __NETWORKSYSTEM_H__
 

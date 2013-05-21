@@ -1,3 +1,9 @@
+//**************************************************
+//File: ICompression.h
+//Author: GaoJiongjiong
+//Function: ¹Ø¿¨Ñ¹Ëõ½Ó¿Ú
+//**************************************************
+
 #ifndef __ICOMPRESSION_H__
 #define __ICOMPRESSION_H__
 

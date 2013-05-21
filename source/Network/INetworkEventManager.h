@@ -1,3 +1,9 @@
+//**************************************************
+//File: INetworkEventManager.h
+//Author: GaoJiongjiong
+//Function: 网络事件管理器
+//**************************************************
+
 #ifndef __INETWORKEVENTMANAGER_H__
 #define __INETWORKEVENTMANAGER_H__
 

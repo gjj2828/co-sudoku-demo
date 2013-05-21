@@ -1,3 +1,9 @@
+//**************************************************
+//File: main.cpp
+//Author: GaoJiongjiong
+//Function: äÖÈ¾Ä£¿é
+//**************************************************
+
 #include "StdAfx.h"
 #include "RenderSystem.h"
 

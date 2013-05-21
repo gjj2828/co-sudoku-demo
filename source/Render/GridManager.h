@@ -1,3 +1,9 @@
+//**************************************************
+//File: GridManager.cpp
+//Author: GaoJiongjiong
+//Function: Õ¯∏Òπ‹¿Ì
+//**************************************************
+
 #ifndef __GRIDMANAGER_H__
 #define __GRIDMANAGER_H__
 

@@ -1,3 +1,9 @@
+//**************************************************
+//File: ComPuzExpr.h
+//Author: GaoJiongjiong
+//Function: 关卡通用表达式
+//**************************************************
+
 #ifndef __COMPUZEXPR_H__
 #define __COMPUZEXPR_H__
 

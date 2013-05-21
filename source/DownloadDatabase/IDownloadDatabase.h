@@ -1,3 +1,9 @@
+//**************************************************
+//File: IDownloadDatabase.cpp
+//Author: GaoJiongjiong
+//Function: 下载关卡数据库
+//**************************************************
+
 #ifndef __IDOWNLOADDATABASE_H__
 #define __IDOWNLOADDATABASE_H__
 

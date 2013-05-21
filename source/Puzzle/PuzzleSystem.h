@@ -1,3 +1,9 @@
+//**************************************************
+//File: PuzzleSystem.h
+//Author: GaoJiongjiong
+//Function: ¹Ø¿¨Ä£¿é
+//**************************************************
+
 #ifndef __PUZZLESYSTEM_H__
 #define __PUZZLESYSTEM_H__
 

@@ -1,3 +1,9 @@
+//**************************************************
+//File: IGridManager.h
+//Author: GaoJiongjiong
+//Function: 格子管理接口
+//**************************************************
+
 #ifndef __IGRIDMANAGER_H__
 #define __IGRIDMANAGER_H__
 

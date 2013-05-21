@@ -1,3 +1,9 @@
+//**************************************************
+//File: IRenderSystem.h
+//Author: GaoJiongjiong
+//Function: äÖÈ¾½Ó¿Ú
+//**************************************************
+
 #ifndef __IRENDERSYSTEM_H__
 #define __IRENDERSYSTEM_H__
 

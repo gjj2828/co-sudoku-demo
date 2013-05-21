@@ -1,3 +1,9 @@
+//**************************************************
+//File: main.cpp
+//Author: GaoJiongjiong
+//Function: 下载关卡数据库
+//**************************************************
+
 #include "StdAfx.h"
 #include "DownloadDatabase.h"
 

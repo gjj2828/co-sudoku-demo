@@ -1,3 +1,9 @@
+//**************************************************
+//File: IPuzzleSystem.h
+//Author: GaoJiongjiong
+//Function: 关卡模块接口
+//**************************************************
+
 #ifndef __IPUZZLESYSTEM_H__
 #define __IPUZZLESYSTEM_H__
 

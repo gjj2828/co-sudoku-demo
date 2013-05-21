@@ -1,3 +1,9 @@
+//**************************************************
+//File: RenderSystem.h
+//Author: GaoJiongjiong
+//Function: äÖÈ¾Ä£¿é
+//**************************************************
+
 #ifndef __RENDERSYSTEM_H__
 #define __RENDERSYSTEM_H__
 

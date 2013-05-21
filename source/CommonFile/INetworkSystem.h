@@ -1,3 +1,9 @@
+//**************************************************
+//File: INetworkSystem.h
+//Author: GaoJiongjiong
+//Function: ÍøÂçÄ£¿é½Ó¿Ú
+//**************************************************
+
 #ifndef __INETWORKSYSTEM_H__
 #define __INETWORKSYSTEM_H__
 

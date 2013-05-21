@@ -1,3 +1,9 @@
+//**************************************************
+//File: GridManager.cpp
+//Author: GaoJiongjiong
+//Function: Õ¯∏Òπ‹¿Ì
+//**************************************************
+
 #include "StdAfx.h"
 #include "GridManager.h"
 

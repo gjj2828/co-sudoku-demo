@@ -1,3 +1,9 @@
+//**************************************************
+//File: DownloadDatabase.h
+//Author: GaoJiongjiong
+//Function: 下载关卡数据库
+//**************************************************
+
 #ifndef __DOWNLOADDATABASE_H__
 #define __DOWNLOADDATABASE_H__
 

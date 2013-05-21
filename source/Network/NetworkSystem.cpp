@@ -1,3 +1,9 @@
+//**************************************************
+//File: NetworkSystem.cpp
+//Author: GaoJiongjiong
+//Function: ÍøÂçÄ£¿é
+//**************************************************
+
 #include "StdAfx.h"
 #include "NetworkSystem.h"
 #include "SockObj.h"

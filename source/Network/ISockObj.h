@@ -1,3 +1,9 @@
+//**************************************************
+//File: ISockObj.h
+//Author: GaoJiongjiong
+//Function: SocketµÄ·â×°
+//**************************************************
+
 #ifndef __ISOCKOBJ_H__
 #define __ISOCKOBJ_H__
 

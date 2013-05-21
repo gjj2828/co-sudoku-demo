@@ -1,3 +1,9 @@
+//**************************************************
+//File: Game.cpp
+//Author: GaoJiongjiong
+//Function: ÓÎÏ·Ö÷Ìå
+//**************************************************
+
 #include "StdAfx.h"
 #include "Game.h"
 #include <IPuzzleSystem.h>

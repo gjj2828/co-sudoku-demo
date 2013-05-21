@@ -1,3 +1,9 @@
+//**************************************************
+//File: SockObj.h
+//Author: GaoJiongjiong
+//Function: SocketµÄ·â×°
+//**************************************************
+
 #ifndef __SOCKOBJ_H__
 #define __SOCKOBJ_H__
 

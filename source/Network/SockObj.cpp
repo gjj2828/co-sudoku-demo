@@ -1,3 +1,9 @@
+//**************************************************
+//File: SockObj.cpp
+//Author: GaoJiongjiong
+//Function: SocketµÄ·â×°
+//**************************************************
+
 #include "StdAfx.h"
 #include "SockObj.h"
 #include <MSTcpIP.h>
