@@ -12,3 +12,5 @@ Network			网络模块，已完成
 Puzzle			关卡模块，未完成
 Render			渲染模块，未完成
 SimpleCompression	简单关卡压缩模块，未完成
+
+作者：高炯炯
