@@ -113,8 +113,12 @@ private:
     void        OnAccept(int client);
     void        OnConnect();
     void        OnRecv(Packet* pPacket);
+    void        OnBroadCastRecv(BroadCastPacket* pPacket, SOCKADDR_IN* pLocalAddr, SOCKADDR_IN* pRemoteAddr);
     void        OnDisconnect();
     void        OnStop();
+
+    bool        IsHostPrior(BroadCastPacket* pPacket, SOCKADDR_IN* pLocalAddr, SOCKADDR_IN* pRemoteAddr);
+    bool        IsBeforePrior(BroadCastPacket* pPacket, SOCKADDR_IN* pLocalAddr, SOCKADDR_IN* pRemoteAddr);
 
     static const float m_cBroadCastSendInterval;
     static const float m_cBroadCastCheckServerInterval;

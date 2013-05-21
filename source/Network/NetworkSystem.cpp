@@ -216,71 +216,7 @@ int CNetworkSystem::HandleEvent(const Event& event)
     case EEVENT_ONRECV:
         if(event.pSockObj->GetId() == ESOCKOBJTYPE_BROADCAST)
         {
-            if(m_eState == ESTATE_WAITING && event.pPacket->type == EPACKETTYPE_BROADCAST)
-            {
-                BroadCastPacket* packet = (BroadCastPacket*)event.pPacket;
-                if(strcmp(packet->sGameName, GAME_NAME) == 0)
-                {
-                    bool bCheck                 = false;
-                    SOCKADDR_IN* pLocalAddr     = (SOCKADDR_IN*)event.pLocalAddr;
-                    SOCKADDR_IN* pRemoteAddr    = (SOCKADDR_IN*)event.pRemoteAddr;
-                    if(packet->iState == ESTATE_HOST)
-                    {
-                        if(packet->iCoClientNum < m_iCoClientMax) bCheck = true;
-                    }
-                    else if(packet->iState == ESTATE_WAITING)
-                    {
-                        if(packet->iSendCount > m_iSendCount)
-                        {
-                            bCheck = true;
-                        }
-                        else if(packet->iSendCount == m_iSendCount)
-                        {
-                            if(pRemoteAddr->sin_addr.s_addr < pLocalAddr->sin_addr.s_addr) bCheck = true;
-                        }
-                    }
-
-                    if(bCheck && m_bRecvServer)
-                    {
-                        bCheck = false;
-                        if(pRemoteAddr->sin_addr.s_addr == m_Server.s_addr)
-                        {
-                            bCheck = true;
-                        }
-                        else
-                        {
-                            if(packet->iState == ESTATE_HOST)
-                            {
-                                if(m_ServerPacket.iState == ESTATE_HOST)
-                                {
-                                    if(packet->iCoClientNum > m_ServerPacket.iCoClientNum)  bCheck = true;
-                                    else if(packet->iSendCount > m_ServerPacket.iSendCount) bCheck = true;
-                                    else if(pRemoteAddr->sin_addr.s_addr < m_Server.s_addr)  bCheck = true;
-                                }
-                                else
-                                {
-                                    bCheck = true;
-                                }
-                            }
-                            else if(packet->iState == ESTATE_WAITING)
-                            {
-                                if(m_ServerPacket.iState == ESTATE_WAITING)
-                                {
-                                    if(packet->iSendCount > m_ServerPacket.iSendCount) bCheck = true;
-                                    else if(pRemoteAddr->sin_addr.s_addr < m_Server.s_addr) bCheck = true;
-                                }
-                            }
-                        }
-                    }
-
-                    if(bCheck)
-                    {
-                        memcpy(&m_ServerPacket, packet, sizeof(BroadCastPacket));
-                        m_Server = pRemoteAddr->sin_addr;
-                        m_bRecvServer = true;
-                    }
-                }
-            }
+            OnBroadCastRecv((BroadCastPacket*)event.pPacket, (SOCKADDR_IN*)event.pLocalAddr, (SOCKADDR_IN*)event.pRemoteAddr);
         }
         else
         {
@@ -447,6 +383,19 @@ void CNetworkSystem::OnRecv(Packet* pPacket)
     }
 }
 
+void CNetworkSystem::OnBroadCastRecv(BroadCastPacket* pPacket, SOCKADDR_IN* pLocalAddr, SOCKADDR_IN* pRemoteAddr)
+{
+    if(m_eState != ESTATE_WAITING)                          return;
+    if(pPacket->type != EPACKETTYPE_BROADCAST)              return;
+    if(strcmp(pPacket->sGameName, GAME_NAME) != 0)          return;
+    if(!IsHostPrior(pPacket, pLocalAddr, pRemoteAddr))      return;
+    if(!IsBeforePrior(pPacket, pLocalAddr, pRemoteAddr))    return;
+
+    memcpy(&m_ServerPacket, pPacket, sizeof(BroadCastPacket));
+    m_Server = pRemoteAddr->sin_addr;
+    m_bRecvServer = true;
+}
+
 void CNetworkSystem::OnDisconnect()
 {
     for(UINT i = 0; i < m_vectorListener.size(); i++)
@@ -461,4 +410,42 @@ void CNetworkSystem::OnStop()
     {
         m_vectorListener[i]->OnStop();
     }
+}
+
+bool CNetworkSystem::IsHostPrior(BroadCastPacket* pPacket, SOCKADDR_IN* pLocalAddr, SOCKADDR_IN* pRemoteAddr)
+{
+    if(pPacket->iState == ESTATE_HOST && pPacket->iCoClientNum < m_iCoClientMax) return true;
+
+    if(pPacket->iState == ESTATE_WAITING)
+    {
+        if(pPacket->iSendCount > m_iSendCount)                          return true;
+        if(pPacket->iSendCount < m_iSendCount)                          return false;
+        if(pRemoteAddr->sin_addr.s_addr < pLocalAddr->sin_addr.s_addr)  return true;
+    }
+
+    return false;
+}
+
+bool CNetworkSystem::IsBeforePrior(BroadCastPacket* pPacket, SOCKADDR_IN* pLocalAddr, SOCKADDR_IN* pRemoteAddr)
+{
+    if(!m_bRecvServer)                                  return true;
+    if(pRemoteAddr->sin_addr.s_addr == m_Server.s_addr) return true;
+
+    if(pPacket->iState == ESTATE_HOST)
+    {
+        if(m_ServerPacket.iState != ESTATE_HOST) return true;
+
+        if(pPacket->iCoClientNum > m_ServerPacket.iCoClientNum) return true;
+        if(pPacket->iSendCount > m_ServerPacket.iSendCount)     return true;
+        if(pRemoteAddr->sin_addr.s_addr < m_Server.s_addr)      return true;
+    }
+    else if(pPacket->iState == ESTATE_WAITING)
+    {
+        if(m_ServerPacket.iState != ESTATE_WAITING) return false;
+
+        if(pPacket->iSendCount > m_ServerPacket.iSendCount) return true;
+        if(pRemoteAddr->sin_addr.s_addr < m_Server.s_addr) return true;
+    }
+
+    return false;
 }
